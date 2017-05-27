@@ -3,10 +3,16 @@
 -- solver.lua
 --
 -----------------------------------------------------------------------------------------
-display.setStatusBar( display.HiddenStatusBar )
-system.setIdleTimer( false )
+module(..., package.seeall)
 
+-- NEW VARS
+local board
+local isSolving
+local tileSetupMenuGroup
+local boardSetupMenuGroup
+local currentProcess
 
+-- OLD VARS
 local setup={
 
 		0,0,0, 0,0,0, 0,0,0,
@@ -60,7 +66,7 @@ local setup={
 		-- 4,0,0, 0,0,9, 5,0,0,
 	}
 	
-local tile={}
+-- local tile={}
 local done={}
 local xySpread={}
 local xLines={}
@@ -87,230 +93,206 @@ local processdisplay={}
 local started
 local interrupt=false
 
-function initial()
-	started=false
-	for x=1,9 do
-		tile[x]={}
-		for y=1,9 do
-			tile[x][y]=display.newRect(0,0,30,30)
-			tile[x][y].x=-2+	(x*31)+		((x-((x-1)%3))*2)
-			tile[x][y].y=		(y*31)+		((y-((y-1)%3))*2)
-			tile[x][y].num={}
-			if setup[((y-1)*9)+x]~=0 then
-				local danum=setup[((y-1)*9)+x]
-				tile[x][y].num[danum]=display.newText(danum,0,0,native.systemFont,40)
-				tile[x][y].num[danum].x=tile[x][y].x
-				tile[x][y].num[danum].y=tile[x][y].y
-				tile[x][y].num[danum]:setTextColor(0,0,0)
-			end
-			if x<4 then
-				tile[x][y].quad=1
-				if y<4 then
-					-- tile[x][y].quad=tile[x][y].quad+1
-				elseif y<7 then
-					tile[x][y].quad=tile[x][y].quad+3
-				else
-					tile[x][y].quad=tile[x][y].quad+6
-				end
-			elseif x<7 then
-				tile[x][y].quad=2
-				if y<4 then
-					-- tile[x][y].quad=tile[x][y].quad+1
-				elseif y<7 then
-					tile[x][y].quad=tile[x][y].quad+3
-				else
-					tile[x][y].quad=tile[x][y].quad+6
-				end
-			else
-				tile[x][y].quad=3
-				if y<4 then
-					-- tile[x][y].quad=tile[x][y].quad+1
-				elseif y<7 then
-					tile[x][y].quad=tile[x][y].quad+3
-				else
-					tile[x][y].quad=tile[x][y].quad+6
-				end
-			end
-			function selectTile()
-				if not (icng) then
-					-- print "!1"
-					-- tile[selected[1]][selected[2]]:setFillColor(1,1,1)
-					selected={x,y}
-					chooseMenu()
-					-- tile[selected[1]][selected[2]]:setFillColor(0,1,0)
-				end
-			end
-			tile[x][y]:addEventListener("tap",selectTile)
-		end
-	end
-	
-	square=display.newRect(0,0,display.contentWidth-10,80)
-	square.x=display.contentCenterX
-	square.y=display.contentHeight-65
-	
-	textmain=display.newText("",0,0,native.systemFont,40)
-	textmain.x=square.x
-	textmain.y=square.y
-	textmain:setTextColor(0,0,0)
-	
-	textline1=display.newText("",0,0,native.systemFont,40)
-	textline1.x=square.x
-	textline1.y=square.y-20
-	textline1:setTextColor(0,0,0)
-	
-	textline2=display.newText("",0,0,native.systemFont,40)
-	textline2.x=square.x
-	textline2.y=square.y+20
-	textline2:setTextColor(0,0,0)
-	
-	owner=display.newText("  Written By:\nAndres Movilla",0,0,native.systemFont,20)
-	owner.x=square.x
-	owner.y=display.contentHeight-130
-	-- owner:setTextColor(0,0,0)
-	
-	for i=1,7 do
-		processdisplay[i]=display.newRect(0,0,15,15)
-		processdisplay[i].x=display.contentCenterX+((i-4)*30)
-		processdisplay[i].y=display.contentHeight-160
-		processdisplay[i]:setFillColor(0.6,0.6,0.6)
-	end
-	
-	square1=display.newRect(0,0,75,75)
-	square1.x=display.contentCenterX*0.5
-	square1.y=display.contentHeight-65
-	square1:setFillColor(0.7,0.7,0.7)
-	
-	text1=display.newText("Clean",0,0,native.systemFont,30)
-	text1.x=square1.x
-	text1.y=square1.y
-	text1:setTextColor(0,0,0)
-	
-	square1:addEventListener("tap",prevStep)
-	
-	square2=display.newRect(0,0,75,75)
-	square2.x=display.contentCenterX*1.5
-	square2.y=display.contentHeight-65
-	square2:setFillColor(0.7,0.7,0.7)
-	
-	text2=display.newText("Start",0,0,native.systemFont,30)
-	text2.x=square2.x
-	text2.y=square2.y
-	text2:setTextColor(0,0,0)
-	
-	square2:addEventListener("tap",nextStep)
-	
+function init()
+	initBoard()
+	initUI()
 end
 
-function chooseMenu()
-	if started==false then
-		if (icng) then
-			for n=icng.numChildren,1,-1 do
-				display.remove(icng[n])
-				icng[n]=nil
-			end
-			function clear()
-			icng=nil
-			end
-			timer.performWithDelay(10,clear)
-		else
-			icng=display.newGroup()
-			
-			bkg=display.newRect(display.contentCenterX,display.contentCenterY,display.contentWidth,display.contentHeight)
-			bkg:setFillColor(0,0,0,0.9)
-			icng:insert(bkg)
+function initUI()
+	boardSetupMenuGroup = display.newGroup()
 
-			victim=display.newText(("("..selected[1]..","..selected[2]..")"),0,0,native.systemFont,30)
-			victim.x=display.contentCenterX
-			victim.y=display.contentHeight-165
-			icng:insert(victim)
-			
-			curval=display.newText("Current Value:",0,0,native.systemFont,15)
-			curval.x=display.contentCenterX*0.5
-			curval.y=display.contentHeight-145
-			icng:insert(curval)
-			
-			demotile1=display.newRect(0,0,30,30)
-			demotile1.x=curval.x
-			demotile1.y=curval.y+25
-			icng:insert(demotile1)
-			
-			asd=setup[((selected[2]-1)*9)+selected[1]]
-			
-			curvalnum=display.newText(asd,0,0,native.systemFont,30)
-			curvalnum.x=demotile1.x
-			curvalnum.y=demotile1.y
-			curvalnum:setTextColor(0,0,0)
-			icng:insert(curvalnum)
-			
-			newval=display.newText("New Value:",0,0,native.systemFont,15)
-			newval.x=display.contentCenterX*1.5
-			newval.y=display.contentHeight-145
-			icng:insert(newval)
-			
-			demotile2=display.newRect(0,0,30,30)
-			demotile2.x=newval.x
-			demotile2.y=newval.y+25
-			if tonumber(curvalnum.text)~=0 then
-				demotile2:setFillColor(1,0,0)
+	local midW = display.contentCenterX
+
+	local resetBtn=display.newRect(0,0,210,40)
+	resetBtn.x=midW
+	resetBtn.y=display.contentHeight-70
+	resetBtn:setFillColor(0.8,0.5,0.5)
+	-- resetBtn:addEventListener("tap",prevStep)
+	boardSetupMenuGroup:insert(resetBtn)
+	
+	local resetText=display.newText("Reset",0,0,native.systemFont,30)
+	resetText.x=midW
+	resetText.y=resetBtn.y
+	resetText:setTextColor(0,0,0)
+	boardSetupMenuGroup:insert(resetText)
+
+
+	local solveBtn=display.newRect(0,0,210,40)
+	solveBtn.x=midW
+	solveBtn.y=display.contentHeight-130
+	solveBtn:setFillColor(0.5,0.8,0.5)
+	solveBtn:addEventListener("tap",attemptSolve)
+	boardSetupMenuGroup:insert(solveBtn)
+	
+	local solveText=display.newText("Solve",0,0,native.systemFont,30)
+	solveText.x=midW
+	solveText.y=solveBtn.y
+	solveText:setTextColor(0,0,0)
+	boardSetupMenuGroup:insert(solveText)
+
+end
+
+function initBoard()
+
+	board = { }
+	isSolving = false
+	for y = 1, 9 do
+		board[y] = { }
+		for x = 1, 9 do
+			local square = display.newRect(0,0,30,30)
+			square.x=-2+	(x*31)+		((x-((x-1)%3))*2)
+			square.y=		(y*31)+		((y-((y-1)%3))*2)
+			square.tileX = x
+			square.tileY = y
+			square.quad = (math.ceil(x/3)) + ((math.floor((y-1)/3))*3)
+			square.finalNum = 0
+			square.finalDisplay = display.newText("",0,0,nativeSystemFont,40)
+			square.finalDisplay.x=square.x
+			square.finalDisplay.y=square.y
+			square.isStaticFinal = false
+			square.finalDisplay:setTextColor(0,0,0)
+
+			square.chances = { }
+			square.chancesDisplay = { }
+			for n = 1, 9 do
+				square.chances[n] = true
+				square.chancesDisplay[n]=display.newText("",0,0,native.systemFont,11)
+				square.chancesDisplay[n].x=square.x - 10 + (((n-1)%3)*10)
+				square.chancesDisplay[n].y=square.y - 10 + (math.floor((n-1)/3)*10)
+				square.chancesDisplay[n]:setTextColor(0,0,0)
 			end
-			icng:insert(demotile2)
+
+			square.isSolved = function(self)
+				return (self.finalNum ~= 0)
+			end
+
+			square.hideChances = function(self)
+				for n = 1, 9 do
+					self.chancesDisplay[n].text = ""
+				end
+			end
+
+			square.showChances = function(self)
+				if (self.finalNum == 0) then
+					for n = 1, 9 do
+						if (self.chances[n]) then
+							self.chancesDisplay[n].text = n
+						end
+					end
+				end
+			end
+
+			square.setStaticFinal = function(self, num)
+				self.finalNum = num
+				self.finalDisplay.text = num
+				square.isStaticFinal = true
+				for n = 1, 9 do
+					if (n ~= num) then
+						self.chances[n] = false
+					end
+					self.chancesDisplay[n].text = ""
+				end
+			end
+
+			square.getNumChances = function(self)
+				local count = 0
+				for n = 1, 9 do
+					if (self.chances[n]) then
+						count = count + 1
+					end
+				end
+				return count
+			end
+
+			square.setFinal = function(self, num)
+				self.finalNum = num
+				self.finalDisplay.text = num
+				self.finalDisplay:setFillColor(0,0,0.7)
+				square.isStaticFinal = false
+				resetProcess()
+				for n = 1, 9 do
+					if (n ~= num) then
+						self.chances[n] = false
+					end
+					self.chancesDisplay[n].text = ""
+				end
+			end
+
+			square.removeChance = function(self, index)
+				self.chances[index] = false
+				self.chancesDisplay[index].text = ""
+				self:checkUnique()
+			end
+
+			square.reset = function(self)
+				self.finalNum = 0
+				self.finalDisplay.text = ""
+				self.finalDisplay:setFillColor(0,0,0)
+				square.isStaticFinal = false
+				for n = 1, 9 do
+					self.chances[n] = true
+					self.chancesDisplay[n].text = ""
+				end
+			end
+
+			square.checkUnique = function(self)
+				if (self:getNumChances() == 1 and self.finalNum == 0) then
+					for n = 1, 9 do
+						if (self.chances[n]) then
+							self:setFinal(n)
+						end
+					end
+				end
+			end
+
+			square.tap = function(self)
+				if not (isSolving) then
+					openTileSetupMenuGroup(self)
+				end
+			end
+			square:addEventListener("tap",square)
+
+			board[y][x] = square
+		end
+	end
+
+end
+
+function openTileSetupMenuGroup(tile)
+	if not (tileSetupMenuGroup) then
+		if (tile.finalNum ~= 0) then
+			tile:reset()
+		else
+			tileSetupMenuGroup=display.newGroup()
 			
-			newvalnum=display.newText(0,0,0,native.systemFont,30)
-			newvalnum.x=demotile2.x
-			newvalnum.y=demotile2.y
-			newvalnum:setTextColor(0,0,0)
-			icng:insert(newvalnum)
+			local bkg=display.newRect(display.contentCenterX,display.contentCenterY,display.contentWidth,display.contentHeight)
+			bkg:setFillColor(0,0,0,0.9)
+			tileSetupMenuGroup:insert(bkg)
+
+			local positionText=display.newText(("Modifying tile "..tile.tileX..","..tile.tileY),0,0,native.systemFont,30)
+			positionText.x=display.contentCenterX
+			positionText.y=display.contentHeight-130
+			tileSetupMenuGroup:insert(positionText)
 			
-			acceptbtn=display.newRect(0,0,75,75)
-			acceptbtn.x=display.contentWidth*0.8
-			acceptbtn.y=display.contentHeight-65
-			acceptbtn:setFillColor(0.7,0.7,0.7)
-			acceptbtn:addEventListener("tap",acceptNum)
-			icng:insert(acceptbtn)
-			
-			accepttxt=display.newText("Accept",0,0,native.systemFont,20)
-			accepttxt.x=acceptbtn.x
-			accepttxt.y=acceptbtn.y
-			accepttxt:setTextColor(0,0,0)
-			icng:insert(accepttxt)
-			
-			cancelbtn=display.newRect(0,0,75,75)
+			local cancelbtn=display.newRect(0,0,150,50)
 			cancelbtn.x=display.contentWidth*0.5
 			cancelbtn.y=display.contentHeight-65
 			cancelbtn:setFillColor(0.7,0.7,0.7)
-			cancelbtn:addEventListener("tap",chooseMenu)
-			icng:insert(cancelbtn)
+			cancelbtn:addEventListener("tap",closeTileSetupMenuGroup)
+			tileSetupMenuGroup:insert(cancelbtn)
 			
-			canceltxt=display.newText("Cancel",0,0,native.systemFont,20)
+			local canceltxt=display.newText("Cancel",0,0,native.systemFont,20)
 			canceltxt.x=cancelbtn.x
 			canceltxt.y=cancelbtn.y
 			canceltxt:setTextColor(0,0,0)
-			icng:insert(canceltxt)
+			tileSetupMenuGroup:insert(canceltxt)
 			
-			function cleanNum()
-				newvalnum.text=0
-				demotile2:setFillColor(1,0,0)
-			end
-				
-			clearbtn=display.newRect(0,0,75,75)
-			clearbtn.x=display.contentWidth*0.2
-			clearbtn.y=display.contentHeight-65
-			clearbtn:setFillColor(0.7,0.7,0.7)
-			clearbtn:addEventListener("tap",cleanNum)
-			icng:insert(clearbtn)
-			
-			cleartxt=display.newText("Clear",0,0,native.systemFont,20)
-			cleartxt.x=clearbtn.x
-			cleartxt.y=clearbtn.y
-			cleartxt:setTextColor(0,0,0)
-			icng:insert(cleartxt)
-			
-			numsquares={}
-			numsquarestxt={}
+			local numsquares={}
+			local numsquarestxt={}
 			for n = 1,9 do
 				function changeval()
-					newvalnum.text=n
-					demotile2:setFillColor(0,1,0)
+					tile:setStaticFinal(n)
+					timer.performWithDelay(100,closeTileSetupMenuGroup)
 				end
 			
 				numsquares[n]=display.newRect(0,0,75,75)
@@ -318,19 +300,166 @@ function chooseMenu()
 				numsquares[n].y=display.contentCenterY+(((math.floor((n-1)/3))-1.85)*90)
 				numsquares[n]:setFillColor(0.7,0.7,0.7)
 				numsquares[n]:addEventListener("tap",changeval)
-				icng:insert(numsquares[n])
+				tileSetupMenuGroup:insert(numsquares[n])
 				
 				numsquarestxt[n]=display.newText(n,0,0,native.systemFont,90)
 				numsquarestxt[n].x=numsquares[n].x
 				numsquarestxt[n].y=numsquares[n].y
 				numsquarestxt[n]:setTextColor(0,0,0)
-				icng:insert(numsquarestxt[n])
+				tileSetupMenuGroup:insert(numsquarestxt[n])
 			end
 			
-			icng:toFront()
+			tileSetupMenuGroup:toFront()
 		end
 	end
 end
+
+function closeTileSetupMenuGroup() 
+	display.remove(tileSetupMenuGroup)
+	tileSetupMenuGroup = nil
+end
+
+function attemptSolve()
+	if (isValid()) then
+		boardSetupMenuGroup.isVisible = false
+		currentProcess = 1
+		displayAllChances()
+		advanceProcess()
+	end
+end
+
+function isValid()
+	local foundMistake = false
+	for y = 1,9 do for x = 1,9 do
+		if (board[y][x]:isSolved()) then
+			-- ROW CHECK
+			for sx = 1, 9 do
+				if (sx ~= x and board[y][sx]:isSolved()) then
+					foundMistake = foundMistake or (board[y][sx].finalNum == board[y][x].finalNum)
+				end
+			end
+
+			-- COL CHECK
+			for sy = 1, 9 do
+				if (sy ~= y and board[sy][x]:isSolved()) then
+					foundMistake = foundMistake or (board[sy][x].finalNum == board[y][x].finalNum)
+				end
+			end
+
+			-- QUAD CHECK
+			local searchQ = board[y][x].quad
+
+			local quadX = ((searchQ-1)%3)+1
+			local quadY = math.floor((searchQ-1)/3)+1
+
+			local startSearchX = ((quadX-1)*3)+1
+			local endSearchX = quadX*3
+
+			local startSearchY = ((quadY-1)*3)+1
+			local endSearchY = quadY*3
+			for sx = startSearchX, endSearchX do for sy = startSearchY, endSearchY do
+				if (sy ~= y and sx ~= x and board[sy][sx]:isSolved()) then
+					foundMistake = foundMistake or (board[sy][sx].finalNum == board[y][x].finalNum)
+				end
+			end end
+		end
+	end end
+	return not foundMistake
+end
+
+function displayAllChances()
+	for y = 1, 9 do for x = 1, 9 do
+		board[y][x]:showChances()
+	end end
+end
+
+function resetProcess()
+	currentProcess = 1
+end
+
+function isValidEnhanced()
+	local foundMistake = false
+	for y = 1, 9 do for x = 1,9 do
+		if (board[y][x]:getNumChances() == 0) then
+			foundMistake = true
+		end
+	end end
+	return isValid() and not foundMistake
+end
+
+function advanceProcess()
+	if (not isValidEnhanced()) then
+		print "invalid"
+		cleanNonStatics()
+		boardSetupMenuGroup.isVisible = true
+	else
+		currentProcess = currentProcess + 1
+		if (currentProcess == 2) then
+			timer.performWithDelay(300,lineReduction)
+		elseif (currentProcess == 3) then
+			-- timer.performWithDelay(100,quadReduction)
+		end
+	end
+end
+
+function lineReduction()
+	for y=1,9 do for x=1,9 do
+		if (board[y][x]:isSolved()) then
+			local chance = board[y][x].finalNum
+
+			-- ROW CHECK
+			for sx = 1, 9 do
+				if (x ~= sx) then
+					board[y][sx]:removeChance(chance)
+				end
+			end
+
+			-- COL CHECK
+			for sy = 1, 9 do
+				if (y ~= sy) then
+					board[sy][x]:removeChance(chance)
+				end
+			end
+		end
+	end end
+	advanceProcess()
+end
+
+function quadReduction()
+	for y=1,9 do for x=1,9 do
+		if (board[y][x]:isSolved()) then
+			local chance = board[y][x].finalNum
+			-- QUAD CHECK
+			local searchQ = board[y][x].quad
+
+			local quadX = ((searchQ-1)%3)+1
+			local quadY = math.floor((searchQ-1)/3)+1
+
+			local startSearchX = ((quadX-1)*3)+1
+			local endSearchX = quadX*3
+
+			local startSearchY = ((quadY-1)*3)+1
+			local endSearchY = quadY*3
+			for sx = startSearchX, endSearchX do for sy = startSearchY, endSearchY do
+				if (sy ~= y and sx ~= x) then
+					board[sy][sx]:removeChance(chance)
+				end
+			end end
+		end
+	end end
+	advanceProcess()
+end
+
+function cleanNonStatics()
+	for y = 1, 9 do for x = 1, 9 do
+		if (not board[y][x].isStaticFinal) then
+			board[y][x]:reset()
+		end
+		board[y][x]:hideChances()
+	end end
+end
+
+-- OLD FUNCS
 
 function acceptNum()
 	local tilex=selected[1]
@@ -350,183 +479,6 @@ function acceptNum()
 	end
 	
 	chooseMenu()
-end
-
-function nextStep()
-	if not (icng) then
-		display.remove(square1)
-		display.remove(text1)
-		
-		display.remove(square2)
-		display.remove(text2)
-
-		--  Display()
-		preRevise()
-	end
-end
-
-function preRevise()
-	local laembarro=false
-	for curx=1,9 do for cury=1,9 do
-		
-		local number
-		for n=1,9 do
-			if (tile[curx][cury].num[n]) then
-				number=n
-			end
-		end
-		
-		if (tile[curx][cury]) then
-		
-				for x=1,9 do for y=1,9 do
-					if x==curx and y==cury then
-					elseif y==cury then
-						if (tile[x][y].num[number]) then
-							-- if setup[((y-1)*9)+x]==0 then
-								tile[curx][cury].num[number]:setFillColor(0.75,0,0)
-								laembarro=true
-								-- done[curx][cury]=false
-								-- display.remove(tile[curx][cury].num[number])
-								-- tile[curx][cury].num[number]=nil
-							-- end
-						end
-					elseif x==curx then
-						if (tile[x][y].num[number]) then
-							-- if setup[((y-1)*9)+x]==0 then
-								tile[curx][cury].num[number]:setFillColor(0.75,0,0)
-								laembarro=true
-								-- done[curx][cury]=false
-								-- display.remove(tile[curx][cury].num[number])
-								-- tile[curx][cury].num[number]=nil
-							-- end
-						end
-					elseif tile[curx][cury].quad==tile[x][y].quad then
-						if (tile[x][y].num[number]) then
-							-- if setup[((y-1)*9)+x]==0 then
-								tile[curx][cury].num[number]:setFillColor(0.75,0,0)
-								laembarro=true
-								-- done[curx][cury]=false
-								-- display.remove(tile[curx][cury].num[number])
-								-- tile[curx][cury].num[number]=nil
-							-- end
-						end
-					end
-				end
-			end
-		end
-		
-	end end
-	if laembarro==true then
-		-- print "REDUCE BRUTES"
-		-- text.text="JUEPUTA"
-		function errorDetect()
-			for i=1,7 do
-				display.remove(processdisplay[i])
-				processdisplay[i]=nil
-			end
-		
-			for x=1,9 do 
-				for y=1,9 do
-					for n=1,9 do
-						display.remove(tile[x][y].num[n])
-						tile[x][y].num[n]=nil
-					end
-					display.remove(tile[x][y])
-					tile[x][y]=nil
-			
-				end
-				tile[x]=nil
-			end
-			display.remove(square)
-			square=nil
-			
-			display.remove(textmain)
-			textmain=nil
-			
-			display.remove(textline1)
-			textline1=nil
-			
-			display.remove(textline2)
-			textline2=nil
-			
-			display.remove(owner)
-			owner=nil
-			
-			Runtime:removeEventListener("enterFrame",updateCount)
-			display.remove(bfcount)
-			bfcount=nil
-			
-			timer.performWithDelay(500,initial)
-		end
-			timer.performWithDelay(1000,errorDetect)
-		-- Runtime:addEventListener("tap",reduceBrutes)
-		-- mrClean()
-		-- doneCheck()
-	else
-		-- text.text="PILLALO"
-		-- print "Correct"
-		-- Runtime:addEventListener("tap",ShamWow)
-		timer.performWithDelay(10,Display)
-	end
-end
-
-function prevStep()
-	if not (icng) then
-		display.remove(square1)
-		display.remove(text1)
-		
-		display.remove(square2)
-		display.remove(text2)
-
-		setup={
-
-			0,0,0, 0,0,0, 0,0,0,
-			0,0,0, 0,0,0, 0,0,0,
-			0,0,0, 0,0,0, 0,0,0,
-			
-			0,0,0, 0,0,0, 0,0,0,
-			0,0,0, 0,0,0, 0,0,0,
-			0,0,0, 0,0,0, 0,0,0,
-			
-			0,0,0, 0,0,0, 0,0,0,
-			0,0,0, 0,0,0, 0,0,0,
-			0,0,0, 0,0,0, 0,0,0,
-		}
-		
-		for i=1,7 do
-			display.remove(processdisplay[i])
-			processdisplay[i]=nil
-		end
-		
-		for x=1,9 do 
-			for y=1,9 do
-				for n=1,9 do
-					display.remove(tile[x][y].num[n])
-					tile[x][y].num[n]=nil
-				end
-				display.remove(tile[x][y])
-				tile[x][y]=nil
-		
-			end
-			tile[x]=nil
-		end
-		display.remove(square)
-		square=nil
-		
-		display.remove(textmain)
-		textmain=nil
-		
-		display.remove(textline1)
-		textline1=nil
-		
-		display.remove(textline2)
-		textline2=nil
-		
-		display.remove(owner)
-		owner=nil
-		
-		timer.performWithDelay(500,initial)
-	end
 end
 
 function Display()
@@ -606,7 +558,6 @@ function updateCount()
 end 
 
 function doneCheck()
--- Runtime:removeEventListener("tap",doneCheck)
 	if interrupt==false then
 	local finished=true
 	local finished2=true
@@ -830,372 +781,7 @@ function doneCheck()
 	end
 end
 
-function Assign()
--- Runtime:removeEventListener("tap",Assign)
-	local wtf=false
-	textmain.text=""
-	textline1.text=""
-	textline2.text=""
-	for curx=1,9 do for cury=1,9 do
-	-- if not (curx) then
-		-- curx=0
-	-- end
-	-- if not (cury) then
-		-- cury=1
-	-- end
-	-- if curx~=0 and (tile[curx][cury]) then
-		-- tile[curx][cury]:setFillColor(1,1,1)
-	-- end
-	-- curx=curx+1
-	-- if curx==10 then
-		-- curx=1
-		-- cury=cury+1
-	-- end
-	if (tile[curx][cury]) then
-		if setup[((cury-1)*9)+curx]~=0 then
-			for n=1,9 do if (tile[curx][cury].num[n]) then
-				tile[curx][cury].num[n]:setTextColor(0,0,0)
-			end end
-		end
-		if done[curx][cury]~=true then
-		-- tile[curx][cury]:setFillColor(0,0,0.5)
-		local quant=0
-		for n=1,9 do
-			if (tile[curx][cury].num[n]) then
-				quant=quant+1
-			end
-		end
-		if quant==1 then
-			for n=1,9 do
-				if (tile[curx][cury].num[n]) then
-					print ("("..curx..","..cury..") -- "..n.." PLACED")
-					display.remove(tile[curx][cury].num[n])
-					tile[curx][cury].num[n]=nil
-					
-					tile[curx][cury].num[n]=display.newText(n,0,0,native.systemFont,40)
-					tile[curx][cury].num[n].x=tile[curx][cury].x
-					tile[curx][cury].num[n].y=tile[curx][cury].y
-					tile[curx][cury].num[n]:setTextColor(0,0,1)
-					done[curx][cury]=true
-					clean()
-				end
-			end
-		elseif quant==0 then
-			wtf=true
-			tile[curx][cury].num[10]=display.newText("!!",0,0,native.systemFont,40)
-			tile[curx][cury].num[10].x=tile[curx][cury].x
-			tile[curx][cury].num[10].y=tile[curx][cury].y
-			tile[curx][cury].num[10]:setTextColor(1,0,0)
-			done[curx][cury]=true
-		end
-		end
-	end
 
-
-	-- if curx==9 and cury==9 then
-		-- tile[curx][cury]:setFillColor(1,1,1)
-		-- curx=nil
-		-- cury=nil
-		-- timer.performWithDelay(10,doneCheck)
-	-- else
-		-- timer.performWithDelay(10,Assign)
-	-- end
-	end end
-	if wtf==true then
-		textmain.text="VERGA PRIMO"
-		timer.performWithDelay(1000,reduceBrutes)
-	else
-		timer.performWithDelay(10,doneCheck)
-	end
-end
-
-function tileSelect()
-	for y=1,9 do
-		for x=1,9 do
-			if done[x][y]==true and xySpread[x][y]==false then
-				xySpread[x][y]=true
-				for n=1,9 do 
-					if (tile[x][y].num[n]) then
-						xLines[x][n]=true
-						yLines[y][n]=true
-					end
-				end
-			end
-		end
-	end
-	timer.performWithDelay(10,tileOptions)
-end
-
-function tileOptions()
-	for curx=1,9 do for cury=1,9 do
-	-- if not (curx) then
-		-- curx=0
-	-- end
-	-- if not (cury) then
-		-- cury=1
-	-- end
-	-- print (curx..","..cury)
-	-- not(curx~=ix and cury ~=iy)
-	-- if curx~=0 and (tile[curx][cury]) then
-		-- tile[curx][cury]:setFillColor(1,1,1)
-	-- end
-	-- curx=curx+1
-	-- if curx==10 then
-		-- curx=1
-		-- cury=cury+1
-	-- end
-	if (tile[curx][cury]) then
-		if done[curx][cury]==false then
-			-- tile[curx][cury]:setFillColor(0,0.75,0)
-			for n=1,9 do
-				if xLines[curx][n]==true or yLines[cury][n]==true then
-					display.remove(tile[curx][cury].num[n])
-					tile[curx][cury].num[n]=nil
-				end
-			end
-		else
-			-- tile[curx][cury]:setFillColor(0,0.25,0)
-		end
-	end
-	
-	-- if curx==9 and cury==9 then
-		-- tile[curx][cury]:setFillColor(1,1,1)
-		-- curx=nil
-		-- cury=nil
-		-- timer.performWithDelay(1,Assign)
-	-- else
-		-- timer.performWithDelay(1,tileOptions)
-	-- end
-	end end
-	timer.performWithDelay(100,Assign)
-end
-
-function areaSelect()
-	for y=1,9 do
-		for x=1,9 do
-			if done[x][y]==true and areaSpread[x][y]==false then
-				areaSpread[x][y]=true
-				for n=1,9 do
-					if (tile[x][y].num[n]) then
-						areaTiles[tile[x][y].quad][n]=true
-					end
-				end
-			end
-		end
-	end
-	timer.performWithDelay(10,areaOptions)
-end
-
-function areaOptions()
-	for curx=1,9 do for cury=1,9 do
-	-- base, ix, iy
-	-- if not (curx) then
-		-- curx=0
-	-- end
-	-- if not (cury) then
-		-- cury=1
-	-- end
-	-- print (curx..","..cury)
-	-- not(curx~=ix and cury ~=iy)
-	-- if curx~=0 and (tile[curx][cury]) then
-		-- tile[curx][cury]:setFillColor(1,1,1)
-	-- end
-	-- curx=curx+1
-	-- if curx==10 then
-		-- curx=1
-		-- cury=cury+1
-	-- end
-	if (tile[curx][cury]) then
-		if done[curx][cury]==false then
-			-- tile[curx][cury]:setFillColor(0.75,0,0)
-			for n=1,9 do
-				if (areaTiles[tile[curx][cury].quad][n]==true) then
-					display.remove(tile[curx][cury].num[n])
-					tile[curx][cury].num[n]=nil
-				end
-			end
-		else
-			-- tile[curx][cury]:setFillColor(0.25,0,0)
-		end
-	end
-	
-	-- if curx==9 and cury==9 then
-		-- tile[curx][cury]:setFillColor(1,1,1)
-		-- curx=nil
-		-- cury=nil
-		-- timer.performWithDelay(1,Assign)
-	-- else
-		-- timer.performWithDelay(1,areaOptions)
-	-- end
-	end end
-	timer.performWithDelay(100,Assign)
-end
-
-function quadSelect()
-	quadinfo={}
-	if unqQuadSpread==false then
-		for q=1,9 do
-			quadinfo[q]={0,0,0, 0,0,0, 0,0,0}
-		end
-		for y=1,9 do
-			for x=1,9 do
-				if done[x][y]==false then
-					for n=1,9 do
-						if (tile[x][y].num[n]) then
-							quadinfo[tile[x][y].quad][n]=quadinfo[tile[x][y].quad][n]+1
-						end
-					end
-				end
-			end
-		end
-	end
-	timer.performWithDelay(10,quadOptions)
-end
-
-function quadOptions()
-	for curx=1,9 do for cury=1,9 do
-	-- if not (curx) then
-		-- curx=0
-	-- end
-	-- if not (cury) then
-		-- cury=1
-	-- end
-	-- print (curx..","..cury)
-	-- not(curx~=ix and cury ~=iy)
-	-- if curx~=0 and (tile[curx][cury]) then
-		-- tile[curx][cury]:setFillColor(1,1,1)
-	-- end
-	-- curx=curx+1
-	-- if curx==10 then
-		-- curx=1
-		-- cury=cury+1
-	-- end
-	if (tile[curx][cury]) then
-		if done[curx][cury]==false then
-			-- tile[curx][cury]:setFillColor(0.75,0.75,0)
-			for n=1,9 do
-				if (tile[curx][cury].num[n]) then
-					if (quadinfo[tile[curx][cury].quad][n]==1) then
-						
-						print ("("..curx..","..cury..") -- "..n.." PLACED")
-						for n2=1,9 do
-							display.remove(tile[curx][cury].num[n2])
-							tile[curx][cury].num[n2]=nil
-						end
-						
-						tile[curx][cury].num[n]=display.newText(n,0,0,native.systemFont,40)
-						tile[curx][cury].num[n].x=tile[curx][cury].x
-						tile[curx][cury].num[n].y=tile[curx][cury].y
-						tile[curx][cury].num[n]:setTextColor(0,0,1)
-						done[curx][cury]=true
-						clean()
-					end
-				end
-			end
-		-- else
-			-- tile[curx][cury]:setFillColor(0.25,0.25,0)
-		end
-	end
-	
-	-- if curx==9 and cury==9 then
-		-- tile[curx][cury]:setFillColor(1,1,1)
-		-- curx=nil
-		-- cury=nil
-		-- unqQuadSpread=true
-		-- timer.performWithDelay(1,Assign)
-	-- else
-		-- timer.performWithDelay(1,quadOptions)
-	-- end
-	end end
-	unqQuadSpread=true
-	timer.performWithDelay(100,Assign)
-end
-
-function lineSelect()
-	xlineinfo={}
-	ylineinfo={}
-	for a=1,9 do
-		ylineinfo[a]={0,0,0, 0,0,0, 0,0,0,}
-		xlineinfo[a]={0,0,0, 0,0,0, 0,0,0,}
-	end
-	for y=1,9 do
-		for x=1,9 do
-			if done[x][y]==false then
-				-- print ("!! X-"..x)
-				for n=1,9 do
-					if (tile[x][y].num[n]) then
-						-- print ("num-"..n)
-						-- print (xlineinfo[x][n])
-						xlineinfo[x][n]=xlineinfo[x][n]+1
-						-- print (xlineinfo[x][n])
-						ylineinfo[y][n]=ylineinfo[y][n]+1
-					end
-					-- print (x.."->"..n.."-"..xlineinfo[x][n])
-				end
-			end
-		end
-	end
-	timer.performWithDelay(10,lineOptions)
-end
-
-function lineOptions()
-	for curx=1,9 do for cury=1,9 do
-	-- base, ix, iy
-	-- if not (curx) then
-		-- curx=0
-	-- end
-	-- if not (cury) then
-		-- cury=1
-	-- end
-	-- print (curx..","..cury)
-	-- not(curx~=ix and cury ~=iy)
-	-- if curx~=0 and (tile[curx][cury]) then
-		-- tile[curx][cury]:setFillColor(1,1,1)
-	-- end
-	-- curx=curx+1
-	-- if curx==10 then
-		-- curx=1
-		-- cury=cury+1
-	-- end
-	if (tile[curx][cury]) then
-		if done[curx][cury]==false then
-			-- tile[curx][cury]:setFillColor(0.75,0,0.75)
-			for n=1,9 do
-				if (tile[curx][cury].num[n]) then
-					-- print (curx..","..cury.."->"..n.." -- "..xlineinfo[curx][n]..","..ylineinfo[cury][n])
-					if xlineinfo[curx][n]==1 or ylineinfo[cury][n]==1 then
-						
-						print ("("..curx..","..cury..") -- "..n.." PLACED")
-						for n2=1,9 do
-							display.remove(tile[curx][cury].num[n2])
-							tile[curx][cury].num[n2]=nil
-						end
-						
-						tile[curx][cury].num[n]=display.newText(n,0,0,native.systemFont,40)
-						tile[curx][cury].num[n].x=tile[curx][cury].x
-						tile[curx][cury].num[n].y=tile[curx][cury].y
-						tile[curx][cury].num[n]:setTextColor(0,0,1)
-						done[curx][cury]=true
-						clean()
-					end
-				end
-			end
-		-- else
-			-- tile[curx][cury]:setFillColor(0.25,0,0.25)
-		end
-	end
-	
-	-- if curx==9 and cury==9 then
-		-- tile[curx][cury]:setFillColor(1,1,1)
-		-- curx=nil
-		-- cury=nil
-	-- else
-		-- timer.performWithDelay(1,lineOptions)
-	-- end
-	end end
-	unqLineSpread=true
-	timer.performWithDelay(100,Assign)
-end
 
 function magicSelect()
 	orderedPairs={}
@@ -1685,176 +1271,3 @@ function reduceBrutes()
 	end
 end
 
-function clean()
-	unqLineSpread=false
-	unqQuadSpread=false
-	flying=false
-	smash=false
-end
-
-function mrClean()
-	clean()
-	for x=1,9 do
-		xLines[x]={false,false,false, false,false,false, false,false,false}
-		yLines[x]={false,false,false, false,false,false, false,false,false}
-		yPosLines[x]={false,false,false, false,false,false, false,false,false}
-		xPosLines[x]={false,false,false, false,false,false, false,false,false}
-		for y=1,9 do
-			xySpread[x][y]=false
-			magicSpread[x][y]=false
-			areaSpread[x][y]=false
-			areaTiles[x][y]=false
-		end
-	end
-end
-
-function revise()
-	for curx=1,9 do for cury=1,9 do
-		
-		local number
-		for n=1,9 do
-			if (tile[curx][cury].num[n]) then
-				number=n
-			end
-		end
-		
-		if (tile[curx][cury]) then
-			if done[curx][cury]==true then
-		
-				for x=1,9 do
-					for y=1,9 do
-						if x==curx and y==cury then
-						elseif y==cury then
-							if (tile[x][y].num[number]) then
-								-- if setup[((y-1)*9)+x]==0 then
-									tile[curx][cury].num[number]:setFillColor(0.75,0,0)
-									isWrong=true
-									-- done[curx][cury]=false
-									-- display.remove(tile[curx][cury].num[number])
-									-- tile[curx][cury].num[number]=nil
-								-- end
-							end
-						elseif x==curx then
-							if (tile[x][y].num[number]) then
-								-- if setup[((y-1)*9)+x]==0 then
-									tile[curx][cury].num[number]:setFillColor(0.75,0,0)
-									isWrong=true
-									-- done[curx][cury]=false
-									-- display.remove(tile[curx][cury].num[number])
-									-- tile[curx][cury].num[number]=nil
-								-- end
-							end
-						elseif tile[curx][cury].quad==tile[x][y].quad then
-							if (tile[x][y].num[number]) then
-								-- if setup[((y-1)*9)+x]==0 then
-									tile[curx][cury].num[number]:setFillColor(0.75,0,0)
-									isWrong=true
-									-- done[curx][cury]=false
-									-- display.remove(tile[curx][cury].num[number])
-									-- tile[curx][cury].num[number]=nil
-								-- end
-							end
-						end
-					end
-				end
-			end
-		end
-		
-	end end
-	if isWrong==true then
-		-- print "REDUCE BRUTES"
-		textmain.text="JUEPUTA"
-		textline1.text=""
-		textline2.text=""
-		isWrong=false
-		timer.performWithDelay(1000,reduceBrutes)
-		-- Runtime:addEventListener("tap",reduceBrutes)
-		-- mrClean()
-		-- doneCheck()
-	else
-		textmain.text="PILLALO"
-		textline1.text=""
-		textline2.text=""
-		print "Correct"
-	
-		display.remove(squarei)
-		squarei=nil
-		
-		display.remove(texti)
-		texti=nil
-	
-		Runtime:addEventListener("tap",ShamWow)
-	end
-	-- else
-		-- timer.performWithDelay(1,revise)
-	-- end
-end
-
-function ShamWow()
-	Runtime:removeEventListener("tap",ShamWow)
-	
-	mrClean()
-	-- setup={
-
-		-- 0,0,0, 0,0,0, 0,0,0,
-		-- 0,0,0, 0,0,0, 0,0,0,
-		-- 0,0,0, 0,0,0, 0,0,0,
-		
-		-- 0,0,0, 0,0,0, 0,0,0,
-		-- 0,0,0, 0,0,0, 0,0,0,
-		-- 0,0,0, 0,0,0, 0,0,0,
-		
-		-- 0,0,0, 0,0,0, 0,0,0,
-		-- 0,0,0, 0,0,0, 0,0,0,
-		-- 0,0,0, 0,0,0, 0,0,0,
-	-- }
-	
-	for b=1,table.maxn(bfOrder) do
-		bfOrder[b]=nil
-	end
-	
-	for i=1,7 do
-		display.remove(processdisplay[i])
-		processdisplay[i]=nil
-	end
-	
-	for x=1,9 do 
-		for y=1,9 do
-			for n=1,9 do
-				display.remove(tile[x][y].num[n])
-				tile[x][y].num[n]=nil
-			end
-			if (tile[x][y].num[10]) then
-				display.remove(tile[x][y].num[10])
-				tile[x][y].num[10]=nil
-			end
-			display.remove(tile[x][y])
-			tile[x][y]=nil
-	
-		end
-		tile[x]=nil
-	end
-	display.remove(square)
-	square=nil
-	
-	display.remove(textmain)
-	textmain=nil
-	
-	display.remove(textline1)
-	textline1=nil
-	
-	display.remove(textline2)
-	textline2=nil
-	
-	display.remove(owner)
-	owner=nil
-	
-	Runtime:removeEventListener("enterFrame",updateCount)
-	display.remove(bfcount)
-	bfcount=nil
-	
-	timer.performWithDelay(500,initial)
-end
-
--- Display()
-initial()
