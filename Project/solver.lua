@@ -328,6 +328,12 @@ function attemptSolve()
 	end
 end
 
+function displayAllChances()
+	for y = 1, 9 do for x = 1, 9 do
+		board[y][x]:showChances()
+	end end
+end
+
 function isValid()
 	local foundMistake = false
 	for y = 1,9 do for x = 1,9 do
@@ -367,16 +373,6 @@ function isValid()
 	return not foundMistake
 end
 
-function displayAllChances()
-	for y = 1, 9 do for x = 1, 9 do
-		board[y][x]:showChances()
-	end end
-end
-
-function resetProcess()
-	currentProcess = 1
-end
-
 function isValidEnhanced()
 	local foundMistake = false
 	for y = 1, 9 do for x = 1,9 do
@@ -387,19 +383,100 @@ function isValidEnhanced()
 	return isValid() and not foundMistake
 end
 
+function resetProcess()
+	currentProcess = 1
+end
+
 function advanceProcess()
 	if (not isValidEnhanced()) then
 		print "invalid"
 		cleanNonStatics()
 		boardSetupMenuGroup.isVisible = true
 	else
+		local delay = 200
+		local calls = {
+			lineReduction, quadReduction, lineUniqueX, 
+			lineUniqueY, quadUnique, quadChanceReductionX, 
+			quadChanceReductionY
+		}
 		currentProcess = currentProcess + 1
-		if (currentProcess == 2) then
-			timer.performWithDelay(300,lineReduction)
-		elseif (currentProcess == 3) then
-			-- timer.performWithDelay(100,quadReduction)
+		timer.performWithDelay(delay,calls[currentProcess-1])
+	end
+end
+
+function quadPresence(quad)
+
+	local counts = {0,0,0, 0,0,0, 0,0,0}
+	
+	local startSearchX = quadStartX(quad)
+	local endSearchX = quadEndX(quad)
+
+	local startSearchY = quadStartY(quad)
+	local endSearchY = quadEndY(quad)
+
+	for x = startSearchX, endSearchX do for y = startSearchY, endSearchY do
+		if (board[y][x].finalNum == 0) then
+			for n = 1, 9 do
+				if (board[y][x].chances[n]) then
+					counts[n] = counts[n] + 1
+				end
+			end
+		end
+	end end
+		
+	return counts
+end
+
+function linePresenceX(x)
+	-- COUNT PRESENCE OF NUMBER
+	local counts = {0,0,0, 0,0,0, 0,0,0}
+
+	for y = 1, 9 do
+		if (board[y][x].finalNum == 0) then
+			for n = 1, 9 do
+				if (board[y][x].chances[n]) then
+					counts[n] = counts[n] + 1
+				end
+			end
 		end
 	end
+	return counts
+end
+
+function linePresenceY(y)
+	-- COUNT PRESENCE OF NUMBER
+	local counts = {0,0,0, 0,0,0, 0,0,0}
+
+	for x = 1, 9 do
+		if (board[y][x].finalNum == 0) then
+			for n = 1, 9 do
+				if (board[y][x].chances[n]) then
+					counts[n] = counts[n] + 1
+				end
+			end
+		end
+	end
+	return counts
+end
+
+function quadStartX(quad)
+	local quadX = ((quad-1)%3)+1
+	return (((quadX-1)*3)+1)
+end
+
+function quadEndX(quad)
+	local quadX = ((quad-1)%3)+1
+	return (quadX*3)
+end
+
+function quadStartY(quad)
+	local quadY = math.floor((quad-1)/3)+1
+	return (((quadY-1)*3)+1)
+end
+
+function quadEndY(quad)
+	local quadY = math.floor((quad-1)/3)+1
+	return (quadY*3)
 end
 
 function lineReduction()
@@ -450,6 +527,146 @@ function quadReduction()
 	advanceProcess()
 end
 
+function lineUniqueX()
+	for x = 1, 9 do
+		local counts = linePresenceX(x)
+		
+		-- CHECK UNIQUENESS
+		for n = 1, 9 do 
+			if (counts[n] == 1) then
+				for y = 1, 9 do
+					if (board[y][x].chances[n]) then
+						board[y][x]:setFinal(n)
+					end
+				end
+			end
+		end
+	end
+	advanceProcess()
+end
+
+function lineUniqueY()
+	for y = 1, 9 do
+		local counts = linePresenceY(y)
+
+		-- CHECK UNIQUENESS
+		for n = 1, 9 do 
+			if (counts[n] == 1) then
+				for x = 1, 9 do
+					if (board[y][x].chances[n]) then
+						board[y][x]:setFinal(n)
+					end
+				end
+			end
+		end
+	end
+	advanceProcess()
+end
+
+function quadUnique()
+	for quad = 1, 9 do
+		-- COUNT PRESENCE OF NUMBER
+		local counts = quadPresence(quad)
+	
+		local startSearchX = quadStartX(quad)
+		local endSearchX = quadEndX(quad)
+
+		local startSearchY = quadStartY(quad)
+		local endSearchY = quadEndY(quad)
+		
+		-- CHECK UNIQUENESS
+		for n = 1, 9 do 
+			if (counts[n] == 1) then
+				for x = startSearchX, endSearchX do for y = startSearchY, endSearchY do
+					if (board[y][x].chances[n]) then
+						board[y][x]:setFinal(n)
+					end
+				end end
+			end
+		end
+	end
+	advanceProcess()
+end
+
+function quadChanceReductionX()
+	for quad = 1, 9 do 
+		-- COUNT PRESENCE OF NUMBER
+		local counts = quadPresence(quad)
+	
+		local startSearchX = quadStartX(quad)
+		local endSearchX = quadEndX(quad)
+
+		local startSearchY = quadStartY(quad)
+		local endSearchY = quadEndY(quad)
+		
+		-- CHECK UNIQUENESS
+		for n = 1, 9 do 
+			if (counts[n] == 2 or counts[n] == 3) then
+				for x = startSearchX, endSearchX do
+					local count = 0
+					for y = startSearchY, endSearchY do
+						if (board[y][x].chances[n]) then
+							count = count + 1
+						end
+					end
+					if (count == counts[n]) then
+						for y = 1, 9 do
+							if (board[y][x].quad ~= quad) then
+								board[y][x]:removeChance(n)
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
+function quadChanceReductionY()
+	for quad = 1, 9 do 
+		-- COUNT PRESENCE OF NUMBER
+		local counts = quadPresence(quad)
+	
+		local startSearchX = quadStartX(quad)
+		local endSearchX = quadEndX(quad)
+
+		local startSearchY = quadStartY(quad)
+		local endSearchY = quadEndY(quad)
+		
+		-- CHECK UNIQUENESS
+		for n = 1, 9 do 
+			if (counts[n] == 2 or counts[n] == 3) then
+				for y = startSearchY, endSearchY do
+					local count = 0
+					for x = startSearchX, endSearchX do
+						if (board[y][x].chances[n]) then
+							count = count + 1
+						end
+					end
+					if (count == counts[n]) then
+						for x = 1, 9 do
+							if (board[y][x].quad ~= quad) then
+								board[y][x]:removeChance(n)
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
+function lineChanceReductionX()
+	for x = 1, 9 do
+		local counts = linePresenceX(x)
+		for n = 1, 9 do
+			if (counts[n] <= 3) then
+
+			end
+		end
+	end
+end
+
 function cleanNonStatics()
 	for y = 1, 9 do for x = 1, 9 do
 		if (not board[y][x].isStaticFinal) then
@@ -461,25 +678,6 @@ end
 
 -- OLD FUNCS
 
-function acceptNum()
-	local tilex=selected[1]
-	local tiley=selected[2]
-	local danum=tonumber(newvalnum.text)
-	local oldnum=tonumber(curvalnum.text)
-	if oldnum~=0 then
-		display.remove(tile[tilex][tiley].num[oldnum])
-		tile[tilex][tiley].num[oldnum]=nil
-	end
-	setup[((selected[2]-1)*9)+selected[1]]=danum
-	if danum~=0 then
-		tile[tilex][tiley].num[danum]=display.newText(danum,0,0,native.systemFont,40)
-		tile[tilex][tiley].num[danum].x=tile[tilex][tiley].x
-		tile[tilex][tiley].num[danum].y=tile[tilex][tiley].y
-		tile[tilex][tiley].num[danum]:setTextColor(0,0,0)
-	end
-	
-	chooseMenu()
-end
 
 function Display()
 	started=true
@@ -499,14 +697,13 @@ function Display()
 		areaSpread[x]={}
 		for y=1,9 do
 			tile[x][y]:removeEventListener("tap",selectTile)
-			-- tile[x][y]
 			ogre[x][y]={false,false,false, false,false,false, false,false,false}
 			xySpread[x][y]=false
 			magicSpread[x][y]=false
 			areaSpread[x][y]=false
 			areaTiles[x][y]=false
 			
-			-- print ("("..x..","..y..")".." - "..tile[x][y].quad)
+			-- print ("("..x..","..y..")".." - "..thisquad)
 			-- tile[x][y].t=display.newText(("("..x..","..y..")"),0,0,native.systemFont,15)
 			-- tile[x][y].t.x=tile[x][y].x
 			-- tile[x][y].t.y=tile[x][y].y
@@ -798,31 +995,30 @@ function magicSelect()
 	for x=1,9 do for y=1,9 do
 		local quadx=((x-1)%3)+1
 		local quady=((y-1)%3)+1
+		local thisquad = tile[x][y].quad
 		if done[x][y]==false then
 			for n=1,9 do
 				if (tile[x][y].num[n]) then
-					if orderedPairs[tile[x][y].quad][n]~=false and orderedPairs[tile[x][y].quad][n]~=true then 
-						orderedPairs[tile[x][y].quad][n]=orderedPairs[tile[x][y].quad][n]+1
-						if orderedPairs[tile[x][y].quad].xQuads[quadx][n]~=false and 
-						 orderedPairs[tile[x][y].quad].xQuads[quadx][n]~=true then
-							orderedPairs[tile[x][y].quad].xQuads[quadx][n]=orderedPairs[tile[x][y].quad].xQuads[quadx][n]+1
+					if orderedPairs[thisquad][n]~=false and orderedPairs[thisquad][n]~=true then 
+						orderedPairs[thisquad][n]=orderedPairs[thisquad][n]+1
+						if orderedPairs[thisquad].xQuads[quadx][n]~=false and 
+						 orderedPairs[thisquad].xQuads[quadx][n]~=true then
+							orderedPairs[thisquad].xQuads[quadx][n]=orderedPairs[thisquad].xQuads[quadx][n]+1
 						end
-						if orderedPairs[tile[x][y].quad].yQuads[quady][n]~=false and 
-						 orderedPairs[tile[x][y].quad].yQuads[quady][n]~=true then
-							orderedPairs[tile[x][y].quad].yQuads[quady][n]=orderedPairs[tile[x][y].quad].yQuads[quady][n]+1
+						if orderedPairs[thisquad].yQuads[quady][n]~=false and 
+						 orderedPairs[thisquad].yQuads[quady][n]~=true then
+							orderedPairs[thisquad].yQuads[quady][n]=orderedPairs[thisquad].yQuads[quady][n]+1
 						end
 					end
-				else
-					
 				end
 			end
 		else
 			for n=1,9 do
 				if (tile[x][y].num[n]) then
 					
-					orderedPairs[tile[x][y].quad][n]=false
-					orderedPairs[tile[x][y].quad].xQuads[quadx][n]=false
-					orderedPairs[tile[x][y].quad].yQuads[quady][n]=false
+					orderedPairs[thisquad][n]=false
+					orderedPairs[thisquad].xQuads[quadx][n]=false
+					orderedPairs[thisquad].yQuads[quady][n]=false
 				end
 			end
 		end
@@ -859,18 +1055,18 @@ function magicSelect()
 		end
 	end
 	
-	for x=1,9 do for y=1,9 do
-			local quadx=((x-1)%3)+1
-			local quady=((y-1)%3)+1
-		for n=1,9 do
-			if done[x][y]==false then
-				if (orderedPairs[tile[x][y].quad].xQuads[quadx][n]~=false or 
-					orderedPairs[tile[x][y].quad].yQuads[quady][n]~=false) and
-					(tile[x][y].num[n]) then
-				end
-			end
-		end
-	end end
+	-- for x=1,9 do for y=1,9 do
+	-- 		local quadx=((x-1)%3)+1
+	-- 		local quady=((y-1)%3)+1
+	-- 	for n=1,9 do
+	-- 		if done[x][y]==false then
+	-- 			if (orderedPairs[thisquad].xQuads[quadx][n]~=false or 
+	-- 				orderedPairs[thisquad].yQuads[quady][n]~=false) and
+	-- 				(tile[x][y].num[n]) then
+	-- 			end
+	-- 		end
+	-- 	end
+	-- end end
 	
 	local canDo=false
 	for q=1,9 do
@@ -886,7 +1082,7 @@ function magicSelect()
 		for n=1,9 do
 		-- orderedpairs[q][n]
 			if (tile[x][y].num[n]) then
-				if orderedPairs[tile[x][y].quad][n]==true then
+				if orderedPairs[thisquad][n]==true then
 					nomagic=false
 				end
 			end
@@ -979,7 +1175,7 @@ function dustSelect()
 					selTiles[#selTiles+1]={}
 					selTiles[#selTiles].x=x
 					selTiles[#selTiles].y=x
-					selTiles[#selTiles].quad=tile[x][y].quad
+					selTiles[#selTiles].quad=thisquad
 				end
 			end
 			local canDo=true
@@ -1009,7 +1205,7 @@ function dustSelect()
 					selTiles[#selTiles+1]={}
 					selTiles[#selTiles].x=x
 					selTiles[#selTiles].y=y
-					selTiles[#selTiles].quad=tile[x][y].quad
+					selTiles[#selTiles].quad=thisquad
 				end
 			end
 			local canDo=true
@@ -1042,7 +1238,7 @@ function dustSelect()
 		end
 	end
 	
-	if canDo==true then
+	if canDo==true then 
 		timer.performWithDelay(10,dustOptions)
 	else
 		flying=true
@@ -1059,7 +1255,7 @@ function dustOptions()
 				if (tile[curx][cury].num[n]) then
 					if xlineinfo[curx][n]~=false then
 						for x=1,9 do for y=1,9 do
-							if tile[x][y].quad==tile[curx][cury].quad then
+							if thisquad==tile[curx][cury].quad then
 								if x~=curx then
 									didChange=true
 									display.remove (tile[x][y].num[n])
@@ -1070,7 +1266,7 @@ function dustOptions()
 					end
 					if ylineinfo[cury][n]~=false then
 						for x=1,9 do for y=1,9 do
-							if tile[x][y].quad==tile[curx][cury].quad then
+							if thisquad==tile[curx][cury].quad then
 								if y~=cury then
 									didChange=true
 									display.remove (tile[x][y].num[n])
