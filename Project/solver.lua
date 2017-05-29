@@ -11,59 +11,66 @@ local isSolving
 local tileSetupMenuGroup
 local boardSetupMenuGroup
 local currentProcess
-
+local history
 -- OLD VARS
-local setup={
+local puzzles={
+		{
 
-		0,0,0, 0,0,0, 0,0,0,
-		0,0,0, 0,0,0, 0,0,0,
-		0,0,0, 0,0,0, 0,0,0,
+			{ 0,0,0, 0,0,0, 0,0,0, },
+			{ 0,0,0, 0,0,0, 0,0,0, },
+			{ 0,0,0, 0,0,0, 0,0,0, },
+			
+			{ 0,0,0, 0,0,0, 0,0,0, },
+			{ 0,0,0, 0,0,0, 0,0,0, },
+			{ 0,0,0, 0,0,0, 0,0,0, },
+			
+			{ 0,0,0, 0,0,0, 0,0,0, },
+			{ 0,0,0, 0,0,0, 0,0,0, },
+			{ 0,0,0, 0,0,0, 0,0,0, },
 		
-		0,0,0, 0,0,0, 0,0,0,
-		0,0,0, 0,0,0, 0,0,0,
-		0,0,0, 0,0,0, 0,0,0,
+		}, {
+
+			{ 1,0,0, 0,0,7, 0,9,0, },
+			{ 0,3,0, 0,2,0, 0,0,8, },
+			{ 0,0,9, 6,0,0, 5,0,0, },
+			
+			{ 0,0,5, 3,0,0, 9,0,0, },
+			{ 0,1,0, 0,8,0, 0,0,2, },
+			{ 6,0,0, 0,0,4, 0,0,0, },
+			
+			{ 3,0,0, 0,0,0, 0,1,0, },
+			{ 0,4,0, 0,0,0, 0,0,7, },
+			{ 0,0,7, 0,0,0, 3,0,0, },
 		
-		0,0,0, 0,0,0, 0,0,0,
-		0,0,0, 0,0,0, 0,0,0,
-		0,0,0, 0,0,0, 0,0,0,
+		}, {
 		
-		-- 1,0,0, 0,0,7, 0,9,0, 
-		-- 0,3,0, 0,2,0, 0,0,8,
-		-- 0,0,9, 6,0,0, 5,0,0,
+			{ 8,0,0, 0,0,0, 0,0,0, },
+			{ 0,0,3, 6,0,0, 0,0,0, },
+			{ 0,7,0, 0,9,0, 2,0,0, },
+			
+			{ 0,5,0, 0,0,7, 0,0,0, },
+			{ 0,0,0, 0,4,5, 7,0,0, },
+			{ 0,0,0, 1,0,0, 0,3,0, },
+			
+			{ 0,0,1, 0,0,0, 0,6,8, },
+			{ 0,0,8, 5,0,0, 0,1,0, },
+			{ 0,9,0, 0,0,0, 4,0,0, },
 		
-		-- 0,0,5, 3,0,0, 9,0,0,
-		-- 0,1,0, 0,8,0, 0,0,2,
-		-- 6,0,0, 0,0,4, 0,0,0,
+		}, {
 		
-		-- 3,0,0, 0,0,0, 0,1,0,
-		-- 0,4,0, 0,0,0, 0,0,7,
-		-- 0,0,7, 0,0,0, 3,0,0,
+			{ 1,6,0, 0,9,0, 0,0,0, },
+			{ 0,0,9, 0,0,0, 0,0,2, },
+			{ 0,0,0, 0,0,2, 0,0,0, },
+			
+			{ 9,0,0, 0,8,1, 0,0,0, },
+			{ 0,0,0, 2,0,0, 0,0,7, },
+			{ 0,0,0, 0,6,0, 0,3,0, },
+			
+			{ 0,0,7, 3,0,4, 0,0,6, },
+			{ 0,0,0, 6,0,0, 8,0,0, },
+			{ 4,0,0, 0,0,9, 5,0,0, },
 		
-		
-		-- 8,0,0, 0,0,0, 0,0,0,
-		-- 0,0,3, 6,0,0, 0,0,0,
-		-- 0,7,0, 0,9,0, 2,0,0,
-		
-		-- 0,5,0, 0,0,7, 0,0,0,
-		-- 0,0,0, 0,4,5, 7,0,0,
-		-- 0,0,0, 1,0,0, 0,3,0,
-		
-		-- 0,0,1, 0,0,0, 0,6,8,
-		-- 0,0,8, 5,0,0, 0,1,0,
-		-- 0,9,0, 0,0,0, 4,0,0,
-		
-		
-		-- 1,6,0, 0,9,0, 0,0,0,
-		-- 0,0,9, 0,0,0, 0,0,2,
-		-- 0,0,0, 0,0,2, 0,0,0,
-		
-		-- 9,0,0, 0,8,1, 0,0,0,
-		-- 0,0,0, 2,0,0, 0,0,7,
-		-- 0,0,0, 0,6,0, 0,3,0,
-		
-		-- 0,0,7, 3,0,4, 0,0,6,
-		-- 0,0,0, 6,0,0, 8,0,0,
-		-- 4,0,0, 0,0,9, 5,0,0,
+		},
 	}
 	
 -- local tile={}
@@ -96,6 +103,7 @@ local interrupt=false
 function init()
 	initBoard()
 	initUI()
+	initPuzzle(3)
 end
 
 function initUI()
@@ -150,6 +158,7 @@ function initBoard()
 			square.finalDisplay.x=square.x
 			square.finalDisplay.y=square.y
 			square.isStaticFinal = false
+			square.isGuess = false
 			square.finalDisplay:setTextColor(0,0,0)
 
 			square.chances = { }
@@ -186,6 +195,7 @@ function initBoard()
 				self.finalNum = num
 				self.finalDisplay.text = num
 				square.isStaticFinal = true
+				square.isGuess = false
 				for n = 1, 9 do
 					if (n ~= num) then
 						self.chances[n] = false
@@ -204,11 +214,29 @@ function initBoard()
 				return count
 			end
 
+			square.setGuess = function(self, num)
+				self.finalNum = num
+				self.finalDisplay.text = num
+				self.finalDisplay:setFillColor(0,0.7,0)
+				square.isStaticFinal = false
+				square.isGuess = true
+				resetProcess()
+				for n = 1, 9 do
+					if (n ~= num) then
+						self.chances[n] = false
+					else
+						self.chances[n] = true
+					end
+					self.chancesDisplay[n].text = ""
+				end
+			end
+
 			square.setFinal = function(self, num)
 				self.finalNum = num
 				self.finalDisplay.text = num
 				self.finalDisplay:setFillColor(0,0,0.7)
 				square.isStaticFinal = false
+				square.isGuess = false
 				resetProcess()
 				for n = 1, 9 do
 					if (n ~= num) then
@@ -219,6 +247,9 @@ function initBoard()
 			end
 
 			square.removeChance = function(self, index)
+				if (self.chances[index]) then
+					resetProcess()
+				end
 				self.chances[index] = false
 				self.chancesDisplay[index].text = ""
 				self:checkUnique()
@@ -229,9 +260,10 @@ function initBoard()
 				self.finalDisplay.text = ""
 				self.finalDisplay:setFillColor(0,0,0)
 				square.isStaticFinal = false
+				square.isGuess = false
 				for n = 1, 9 do
 					self.chances[n] = true
-					self.chancesDisplay[n].text = ""
+					self.chancesDisplay[n].text = n
 				end
 			end
 
@@ -258,8 +290,16 @@ function initBoard()
 
 end
 
+function initPuzzle(index)
+	for y = 1, 9 do for x = 1,9 do
+		if (puzzles[index][y][x] ~= 0) then
+			board[y][x]:setStaticFinal(puzzles[index][y][x])
+		end
+	end end
+end
+
 function openTileSetupMenuGroup(tile)
-	if not (tileSetupMenuGroup) then
+	if not (tileSetupMenuGroup and isSolving) then
 		if (tile.finalNum ~= 0) then
 			tile:reset()
 		else
@@ -321,6 +361,8 @@ end
 
 function attemptSolve()
 	if (isValid()) then
+		history = { }
+		isSolving = true
 		boardSetupMenuGroup.isVisible = false
 		currentProcess = 1
 		displayAllChances()
@@ -389,19 +431,44 @@ end
 
 function advanceProcess()
 	if (not isValidEnhanced()) then
-		print "invalid"
-		cleanNonStatics()
-		boardSetupMenuGroup.isVisible = true
-	else
-		local delay = 200
+		print "Invalid."
+		if (table.maxn(history) == 0) then
+			print "No undos. Resetting..."
+			goDefault()
+			boardSetupMenuGroup.isVisible = true
+		else
+			print "Undoing..."
+			removeBruteForce()
+		end
+	elseif (not isFull()) then
+		local delay = 300
 		local calls = {
 			lineReduction, quadReduction, lineUniqueX, 
 			lineUniqueY, quadUnique, quadChanceReductionX, 
-			quadChanceReductionY
+			quadChanceReductionY, lineChanceReductionX,
+			lineChanceReductionY, bruteForce
+		}
+		local callNames = {
+			"Reducing by Lines", "Reducing by Quads",
+			"Setting Uniques in X", "Setting Uniques in Y",
+			"Setting Uniques in Quads", "Reducing by Quad X Chances",
+			"Reducing by Quad Y Chances", "Reducing by Line X Chances",
+			"Reducing by Line Y Chances", "Applying Brute Force"
 		}
 		currentProcess = currentProcess + 1
+		print (callNames[currentProcess-1])
 		timer.performWithDelay(delay,calls[currentProcess-1])
 	end
+end
+
+function isFull()
+	local emptySpace = false
+	for y = 1,9 do for x = 1,9 do
+		if (board[y][x].finalNum == 0) then
+			emptySpace = true
+		end
+	end end
+	return not emptySpace
 end
 
 function quadPresence(quad)
@@ -446,7 +513,6 @@ end
 function linePresenceY(y)
 	-- COUNT PRESENCE OF NUMBER
 	local counts = {0,0,0, 0,0,0, 0,0,0}
-
 	for x = 1, 9 do
 		if (board[y][x].finalNum == 0) then
 			for n = 1, 9 do
@@ -532,7 +598,7 @@ function lineUniqueX()
 		local counts = linePresenceX(x)
 		
 		-- CHECK UNIQUENESS
-		for n = 1, 9 do 
+		for n = 1, 9 do
 			if (counts[n] == 1) then
 				for y = 1, 9 do
 					if (board[y][x].chances[n]) then
@@ -600,19 +666,19 @@ function quadChanceReductionX()
 		local endSearchY = quadEndY(quad)
 		
 		-- CHECK UNIQUENESS
-		for n = 1, 9 do 
+		for n = 1, 9 do
 			if (counts[n] == 2 or counts[n] == 3) then
-				for x = startSearchX, endSearchX do
+				for qx = startSearchX, endSearchX do
 					local count = 0
-					for y = startSearchY, endSearchY do
-						if (board[y][x].chances[n]) then
+					for qy = startSearchY, endSearchY do
+						if (board[qy][qx].chances[n]) then
 							count = count + 1
 						end
 					end
 					if (count == counts[n]) then
 						for y = 1, 9 do
-							if (board[y][x].quad ~= quad) then
-								board[y][x]:removeChance(n)
+							if (board[y][qx].quad ~= quad) then
+								board[y][qx]:removeChance(n)
 							end
 						end
 					end
@@ -620,6 +686,7 @@ function quadChanceReductionX()
 			end
 		end
 	end
+	advanceProcess()
 end
 
 function quadChanceReductionY()
@@ -636,17 +703,17 @@ function quadChanceReductionY()
 		-- CHECK UNIQUENESS
 		for n = 1, 9 do 
 			if (counts[n] == 2 or counts[n] == 3) then
-				for y = startSearchY, endSearchY do
+				for qy = startSearchY, endSearchY do
 					local count = 0
-					for x = startSearchX, endSearchX do
-						if (board[y][x].chances[n]) then
+					for qx = startSearchX, endSearchX do
+						if (board[qy][qx].chances[n]) then
 							count = count + 1
 						end
 					end
 					if (count == counts[n]) then
 						for x = 1, 9 do
-							if (board[y][x].quad ~= quad) then
-								board[y][x]:removeChance(n)
+							if (board[qy][x].quad ~= quad) then
+								board[qy][x]:removeChance(n)
 							end
 						end
 					end
@@ -654,816 +721,161 @@ function quadChanceReductionY()
 			end
 		end
 	end
+	advanceProcess()
 end
 
 function lineChanceReductionX()
 	for x = 1, 9 do
 		local counts = linePresenceX(x)
 		for n = 1, 9 do
-			if (counts[n] <= 3) then
+			if (counts[n] == 2 or counts[n] == 3) then
 
+				local count = 0
+				
+				for y = 1, 9 do
+					if (board[y][x].chances[n]) then
+						count = count + 1
+					end
+
+					if (count == counts[n]) then
+					
+						local quad = board[y][x].quad
+						
+						local startSearchX = quadStartX(quad)
+						local endSearchX = quadEndX(quad)
+
+						local startSearchY = quadStartY(quad)
+						local endSearchY = quadEndY(quad)
+
+						for qx = startSearchX, endSearchX do for qy = startSearchY, endSearchY do
+							if (qx ~= x) then
+								board[qy][qx]:removeChance(n)
+							end
+						end end
+					end
+
+					if (y%3 == 0) then
+						count = 0
+					end
+				end
+				
 			end
 		end
 	end
+	advanceProcess()
 end
 
-function cleanNonStatics()
+function lineChanceReductionY()
+	for y = 1, 9 do
+		local counts = linePresenceY(y)
+		for n = 1, 9 do
+			if (counts[n] == 2 or counts[n] == 3) then
+
+				local count = 0
+				
+				for x = 1, 9 do
+					if (board[y][x].chances[n]) then
+						count = count + 1
+					end
+
+					if (count == counts[n]) then
+						-- print ("Y "..y)
+						-- print ("N "..n)
+						local quad = board[y][x].quad
+						-- print ("QUAD "..quad)
+						local startSearchX = quadStartX(quad)
+						local endSearchX = quadEndX(quad)
+
+						local startSearchY = quadStartY(quad)
+						local endSearchY = quadEndY(quad)
+
+						for qy = startSearchY, endSearchY do for qx = startSearchX, endSearchX do
+							if (qy ~= y) then
+								board[qy][qx]:removeChance(n)
+							end
+						end end
+					end
+
+					if (x%3 == 0) then
+						count = 0
+					end
+				end
+				
+			end
+		end
+	end
+	advanceProcess()
+end
+
+function bruteForce()
+	local nextTry = table.maxn(history)+1
+	local x = 1
+	local y = 1
+	while (history[nextTry] == nil and x <= 9 and y <= 9) do
+		if (board[y][x]:getNumChances() == 2) then
+			local try = {}
+			try.x = x
+			try.y = y
+			try.chances = {}
+			for n = 1, 9 do
+				if (board[y][x].chances[n]) then
+					try.chances[table.maxn(try.chances)+1] = n
+				end
+			end
+			history[nextTry] = try
+		end
+		x = x + 1
+		if (x == 10) then
+			y = y + 1
+			x = 1
+		end
+	end
+	if (history[nextTry] ~= nil) then
+		local y = history[nextTry].y
+		local x = history[nextTry].x
+		local n = history[nextTry].chances[1]
+		board[y][x]:setGuess(n)
+		advanceProcess()
+	else
+		-- help
+	end
+end
+
+function removeBruteForce()
+	local y = history[table.maxn(history)].y
+	local x = history[table.maxn(history)].x
+	local n = history[table.maxn(history)].chances[1]
+	local m = history[table.maxn(history)].chances[2]
+	if (board[y][x].finalNum == n) then
+		board[y][x]:setGuess(m)
+		goGuesses()
+		advanceProcess()
+	elseif (board[y][x].finalNum == m) then
+		board[y][x]:reset()
+		history[table.maxn(history)] = nil
+		removeBruteForce()
+	end
+end
+
+function goGuesses()
+	for y = 1, 9 do for x = 1, 9 do
+		if not(board[y][x].isStaticFinal or board[y][x].isGuess) then
+			board[y][x]:reset()
+		end
+	end end
+end
+
+function goDefault()
 	for y = 1, 9 do for x = 1, 9 do
 		if (not board[y][x].isStaticFinal) then
 			board[y][x]:reset()
 		end
-		board[y][x]:hideChances()
 	end end
 end
 
--- OLD FUNCS
-
-
-function Display()
-	started=true
-	for x=1,9 do
-		areaTiles[x]={}
-		xLines[x]={false,false,false, false,false,false, false,false,false}
-		yLines[x]={false,false,false, false,false,false, false,false,false}
-		xDust[x]={0,0,0, 0,0,0, 0,0,0}
-		yDust[x]={0,0,0, 0,0,0, 0,0,0}
-		yPosLines[x]={false,false,false, false,false,false, false,false,false}
-		xPosLines[x]={false,false,false, false,false,false, false,false,false}
-		-- tile[x]={}
-		done[x]={}
-		ogre[x]={}
-		xySpread[x]={}
-		magicSpread[x]={}
-		areaSpread[x]={}
-		for y=1,9 do
-			tile[x][y]:removeEventListener("tap",selectTile)
-			ogre[x][y]={false,false,false, false,false,false, false,false,false}
-			xySpread[x][y]=false
-			magicSpread[x][y]=false
-			areaSpread[x][y]=false
-			areaTiles[x][y]=false
-			
-			-- print ("("..x..","..y..")".." - "..thisquad)
-			-- tile[x][y].t=display.newText(("("..x..","..y..")"),0,0,native.systemFont,15)
-			-- tile[x][y].t.x=tile[x][y].x
-			-- tile[x][y].t.y=tile[x][y].y
-			-- tile[x][y].t:setTextColor(1,0,0)
-			
-			if setup[((y-1)*9)+x]==0 then
-				for n=1,9 do
-					tile[x][y].num[n]=display.newText(n,0,0,native.systemFont,10)
-					tile[x][y].num[n].x=tile[x][y].x+(((n-1)%3)*10)-10
-					tile[x][y].num[n].y=tile[x][y].y+(math.floor((n-1)/3)*10)-10
-					tile[x][y].num[n]:setTextColor(0,0,1)
-				end
-				done[x][y]=false
-			else
-				done[x][y]=true
-			end
-		end
-	end
-	
-	Runtime:addEventListener("enterFrame",updateCount)
-	
-	function doInt()
-		interrupt=true
-	end
-	
-	squarei=display.newRect(0,0,40,40)
-	squarei.x=30
-	squarei.y=display.contentHeight-140
-	squarei:setFillColor(0.7,0.7,0.7)
-	squarei:addEventListener("tap",doInt)
-	
-	texti=display.newText("X",0,0,native.systemFont,50)
-	texti.x=squarei.x
-	texti.y=squarei.y
-	texti:setTextColor(0,0,0)
-	
-	
-	timer.performWithDelay(250,doneCheck)
-end
-
-function updateCount()
-	if not (bfcount) then
-		bfcount=display.newText(#bfOrder,0,0,native.systemFont,50)
-		bfcount.x=processdisplay[7].x+40
-		bfcount.y=processdisplay[7].y+20
-	else
-		bfcount.text=#bfOrder
-	end
-end 
-
-function doneCheck()
-	if interrupt==false then
-	local finished=true
-	local finished2=true
-	local finished3=true
-	local finished4=true
-	local finished5=true
-	local finished6=true
-	local finished7=true
-	local finished8=true
-	for x=1,9 do
-		for y=1,9 do
-			if done[x][y]==false then
-				finished=false
-				-- print ("("..x..","..y..") -- UnDone")
-				if magicSpread[x][y]==false then
-					finished6=false
-					for i=5,table.maxn(processdisplay) do
-						processdisplay[i]:setFillColor(0.6,0.6,0.6)
-					end
-					-- print ("("..x..","..y..") -- UnMagic")
-				end
-			else
-				if xySpread[x][y]==false then
-					finished2=false
-					for i=1,table.maxn(processdisplay) do
-						processdisplay[i]:setFillColor(0.6,0.6,0.6)
-					end
-					-- print ("("..x..","..y..") -- UnSpread")
-				end
-				if areaSpread[x][y]==false then
-					finished3=false
-					for i=2,table.maxn(processdisplay) do
-						processdisplay[i]:setFillColor(0.6,0.6,0.6)
-					end
-					-- print ("("..x..","..y..") -- UnAreaSpread")
-				end
-			end
-		end
-	end
-	if unqQuadSpread==false then
-		finished4=false
-		for i=3,table.maxn(processdisplay) do
-			processdisplay[i]:setFillColor(0.6,0.6,0.6)
-		end
-	end
-	if unqLineSpread==false then
-		finished5=false
-		for i=4,table.maxn(processdisplay) do
-			processdisplay[i]:setFillColor(0.6,0.6,0.6)
-		end
-	end
-	if flying==false then
-		finished7=false
-		for i=6,table.maxn(processdisplay) do
-			processdisplay[i]:setFillColor(0.6,0.6,0.6)
-		end
-	end
-	if smash==false then
-		finished8=false
-		for i=7,table.maxn(processdisplay) do
-			processdisplay[i]:setFillColor(0.6,0.6,0.6)
-		end
-	end
-	if finished==false then
-		process=0
-		if finished2==true then
-			processdisplay[1]:setFillColor(0,1,0)
-			if finished3==true then
-				processdisplay[2]:setFillColor(0,1,0)
-				if finished4==true then
-					processdisplay[3]:setFillColor(0,1,0)
-					if finished5==true then
-						processdisplay[4]:setFillColor(0,1,0)
-						if finished6==true then
-							processdisplay[5]:setFillColor(0,1,0)
-							if finished7==true then
-								processdisplay[6]:setFillColor(0,1,0)
-								if finished8==true then
-									processdisplay[7]:setFillColor(0,1,0)
-									-- print "!!"
-								elseif finished8==false then
-									processdisplay[7]:setFillColor(0,0,1)
-									process=7
-								end
-							elseif finished7==false then
-								processdisplay[6]:setFillColor(0,0,1)
-								process=6
-							end
-						elseif finished6==false then
-							processdisplay[5]:setFillColor(0,0,1)
-							process=5
-						end
-					elseif finished5==false then
-						processdisplay[4]:setFillColor(0,0,1)
-						process=4
-					end
-				elseif finished4==false then
-					processdisplay[3]:setFillColor(0,0,1)
-					process=3
-				end
-			elseif finished3==false then
-				processdisplay[2]:setFillColor(0,0,1)
-				process=2
-			end
-		elseif finished2==false then
-			processdisplay[1]:setFillColor(0,0,1)
-			process=1
-		end
-		
-		-- print (process)
-		
-			
-			textmain.text=""
-			textline1.text=""
-			textline2.text=""
-		if process==1 then
-			textline1.text="OPCIONES"
-			textline2.text="EN LINEA"
-			timer.performWithDelay(100,tileSelect)
-		elseif process==2 then
-			textline1.text="OPCIONES"
-			textline2.text="EN CUADRANTE"
-			timer.performWithDelay(100,areaSelect)
-		elseif process==3 then
-			textline1.text="UNICO"
-			textline2.text="EN CUADRANTE"
-			timer.performWithDelay(100,quadSelect)
-		elseif process==4 then
-			textline1.text="UNICO"
-			textline2.text="EN LINEA"
-			timer.performWithDelay(100,lineSelect)
-		elseif process==5 then
-			textmain.text="MAGIA NEGRA!"
-			timer.performWithDelay(100,magicSelect)
-		elseif process==6 then
-			textline1.text="POLVO DE"
-			textline2.text="HADAS!"
-			timer.performWithDelay(100,dustSelect)
-		elseif process==7 then
-			textline1.text="FUERZA BRUTA"
-			textline2.text="NOJODA"
-			timer.performWithDelay(250,bruteSelect)
-		else
-			print "NO PUDE MAS"
-			textmain.text="NO PUDE MK"
-			textline1.text=""
-			textline2.text=""
-	
-			display.remove(squarei)
-			squarei=nil
-			
-			display.remove(texti)
-			texti=nil
-	
-			Runtime:addEventListener("tap",ShamWow)
-			
-			-- print "GO AGAIN"
-			-- mrClean()
-			-- doneCheck()
-		end
-	else
-	
-		textmain.text="PERA Y REVISO"
-		textline1.text=""
-		textline2.text=""
-		-- revise()
-		timer.performWithDelay(250,revise)
-	end
-	else
-		interrupt=false
-	
-		function back1()
-			ShamWow()
-			display.remove(square1)
-			display.remove(text1)
-			display.remove(square2)
-			display.remove(text2)
-			display.remove(squarei)
-			display.remove(texti)
-			squarei=nil
-			texti=nil
-			square1=nil
-			text1=nil
-			square2=nil
-			text2=nil
-		end
-		
-		function resume1()
-			doneCheck()
-			display.remove(square1)
-			display.remove(text1)
-			display.remove(square2)
-			display.remove(text2)
-			square1=nil
-			text1=nil
-			square2=nil
-			text2=nil
-		end
-		
-		square1=display.newRect(0,0,75,75)
-		square1.x=display.contentCenterX*0.5
-		square1.y=display.contentHeight-65
-		square1:setFillColor(0.7,0.7,0.7)
-		square1:addEventListener("tap",back1)
-		
-		text1=display.newText("Back",0,0,native.systemFont,20)
-		text1.x=square1.x
-		text1.y=square1.y
-		text1:setTextColor(0,0,0)
-		
-		square2=display.newRect(0,0,75,75)
-		square2.x=display.contentCenterX*1.5
-		square2.y=display.contentHeight-65
-		square2:setFillColor(0.7,0.7,0.7)
-		square2:addEventListener("tap",resume1)
-		
-		text2=display.newText("Resume",0,0,native.systemFont,20)
-		text2.x=square2.x
-		text2.y=square2.y
-		text2:setTextColor(0,0,0)
-	end
-end
-
-
-
-function magicSelect()
-	orderedPairs={}
-	for q=1,9 do 
-		orderedPairs[q]={0,0,0,0,0,0,0,0,0}
-		orderedPairs[q].xQuads={}
-		orderedPairs[q].yQuads={}
-		for a=1,3 do
-			orderedPairs[q].xQuads[a]={0,0,0, 0,0,0, 0,0,0}
-			orderedPairs[q].yQuads[a]={0,0,0, 0,0,0, 0,0,0}
-		end
-	end
-	
-	for x=1,9 do for y=1,9 do
-		local quadx=((x-1)%3)+1
-		local quady=((y-1)%3)+1
-		local thisquad = tile[x][y].quad
-		if done[x][y]==false then
-			for n=1,9 do
-				if (tile[x][y].num[n]) then
-					if orderedPairs[thisquad][n]~=false and orderedPairs[thisquad][n]~=true then 
-						orderedPairs[thisquad][n]=orderedPairs[thisquad][n]+1
-						if orderedPairs[thisquad].xQuads[quadx][n]~=false and 
-						 orderedPairs[thisquad].xQuads[quadx][n]~=true then
-							orderedPairs[thisquad].xQuads[quadx][n]=orderedPairs[thisquad].xQuads[quadx][n]+1
-						end
-						if orderedPairs[thisquad].yQuads[quady][n]~=false and 
-						 orderedPairs[thisquad].yQuads[quady][n]~=true then
-							orderedPairs[thisquad].yQuads[quady][n]=orderedPairs[thisquad].yQuads[quady][n]+1
-						end
-					end
-				end
-			end
-		else
-			for n=1,9 do
-				if (tile[x][y].num[n]) then
-					
-					orderedPairs[thisquad][n]=false
-					orderedPairs[thisquad].xQuads[quadx][n]=false
-					orderedPairs[thisquad].yQuads[quady][n]=false
-				end
-			end
-		end
+function goBlank()
+	for y = 1, 9 do for x = 1, 9 do
+			board[y][x]:reset()
 	end end
-	
-	for q=1,9 do
-		for n=1,9 do
-			if orderedPairs[q][n]~=2 and orderedPairs[q][n]~=3 then
-				orderedPairs[q][n]=false
-				for x=1,3 do
-					orderedPairs[q].xQuads[x][n]=false
-				end
-				for y=1,3 do
-					orderedPairs[q].yQuads[y][n]=false
-				end
-			else
-				if orderedPairs[q][n]~=false then
-					for x=1,3 do
-						if orderedPairs[q].xQuads[x][n]==orderedPairs[q][n] then
-							orderedPairs[q].xQuads[x][n]=true
-						else
-							orderedPairs[q].xQuads[x][n]=false
-						end
-					end
-					for y=1,3 do
-						if orderedPairs[q].yQuads[y][n]==orderedPairs[q][n] then
-							orderedPairs[q].yQuads[y][n]=true
-						else
-							orderedPairs[q].yQuads[y][n]=false
-						end
-					end
-				end
-			end
-		end
-	end
-	
-	-- for x=1,9 do for y=1,9 do
-	-- 		local quadx=((x-1)%3)+1
-	-- 		local quady=((y-1)%3)+1
-	-- 	for n=1,9 do
-	-- 		if done[x][y]==false then
-	-- 			if (orderedPairs[thisquad].xQuads[quadx][n]~=false or 
-	-- 				orderedPairs[thisquad].yQuads[quady][n]~=false) and
-	-- 				(tile[x][y].num[n]) then
-	-- 			end
-	-- 		end
-	-- 	end
-	-- end end
-	
-	local canDo=false
-	for q=1,9 do
-		for n=1,9 do
-			if orderedPairs[q][n]~=false then
-				canDo=true
-			end
-		end
-	end
-	
-	for x=1,9 do for y=1,9 do
-		local nomagic=true
-		for n=1,9 do
-		-- orderedpairs[q][n]
-			if (tile[x][y].num[n]) then
-				if orderedPairs[thisquad][n]==true then
-					nomagic=false
-				end
-			end
-		end
-		magicSpread[x][y]=nomagic
-	end end
-	if canDo==true then
-		timer.performWithDelay(10,magicOptions)
-	else
-		timer.performWithDelay(1,Assign)		
-	end
-end
-
-function magicOptions()
-	local didChange=false
-	for curx=1,9 do for cury=1,9 do
-		if (tile[curx][cury]) then
-			for n=1,9 do
-				local sq=((math.ceil(tile[curx][cury].quad/3)-1)*3)+1
-				for q=sq,sq+2 do
-					if tile[curx][cury].quad~=q then
-						if orderedPairs[q][n]~=false then
-							local quady=((cury-1)%3)+1
-							if orderedPairs[q].yQuads[quady][n]==true then
-								if (tile[curx][cury].num[n]) then
-									didChange=true
-									display.remove (tile[curx][cury].num[n])
-									tile[curx][cury].num[n]=nil
-								end
-							end
-						end
-					end
-				end
-				local sq=((tile[curx][cury].quad-1)%3)+1
-				for q=sq,9,3 do
-					if tile[curx][cury].quad~=q then
-						if orderedPairs[q][n]~=false then
-							local quadx=((curx-1)%3)+1
-							if orderedPairs[q].xQuads[quadx][n]==true then
-								if (tile[curx][cury].num[n]) then
-									didChange=true
-									display.remove (tile[curx][cury].num[n])
-									tile[curx][cury].num[n]=nil
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-	end end
-	if didChange==true then
-		mrClean()
-	end
-	for x=1,9 do for y=1,9 do
-		magicSpread[x][y]=true
-	end end
-	timer.performWithDelay(100,Assign)
-end
-
-function dustSelect()
-
-	xlineinfo={}
-	ylineinfo={}
-	for a=1,9 do
-		ylineinfo[a]={0,0,0, 0,0,0, 0,0,0,}
-		xlineinfo[a]={0,0,0, 0,0,0, 0,0,0,}
-	end
-	for y=1,9 do
-		for x=1,9 do
-			if done[x][y]==false then
-				for n=1,9 do
-					if (tile[x][y].num[n]) then
-						xlineinfo[x][n]=xlineinfo[x][n]+1
-						ylineinfo[y][n]=ylineinfo[y][n]+1
-					end
-				end
-			end
-		end
-	end
-	
-	for x=1,9 do for n=1,9 do
-		if xlineinfo[x][n]>4  or xlineinfo[x][n]==0 or xlineinfo[x][n]==1 then
-			xlineinfo[x][n]=false
-		end
-		if xlineinfo[x][n]~=false then
-			local selTiles={}
-			for y=1,9 do
-				if (tile[x][y].num[n]) then
-					selTiles[#selTiles+1]={}
-					selTiles[#selTiles].x=x
-					selTiles[#selTiles].y=x
-					selTiles[#selTiles].quad=thisquad
-				end
-			end
-			local canDo=true
-			for a=1,table.maxn(selTiles) do
-				local pasta=a-1
-				if pasta==0 then
-					pasta=table.maxn(selTiles)
-				end
-				if selTiles[a].quad~=selTiles[pasta].quad then
-					canDo=false
-				end
-			end
-			if canDo==false then
-				xlineinfo[x][n]=false
-			end
-		end
-	end end
-	
-	for y=1,9 do for n=1,9 do
-		if ylineinfo[y][n]>4 or ylineinfo[y][n]==0 or ylineinfo[y][n]==1 then
-			ylineinfo[y][n]=false
-		end
-		if ylineinfo[y][n]~=false then
-			local selTiles={}
-			for x=1,9 do
-				if (tile[x][y].num[n]) then
-					selTiles[#selTiles+1]={}
-					selTiles[#selTiles].x=x
-					selTiles[#selTiles].y=y
-					selTiles[#selTiles].quad=thisquad
-				end
-			end
-			local canDo=true
-			for a=1,table.maxn(selTiles) do
-				local pasta=a-1
-				if pasta==0 then
-					pasta=table.maxn(selTiles)
-				end
-				if selTiles[a].quad~=selTiles[pasta].quad then
-					canDo=false
-				end
-			end
-			if canDo==false then
-				ylineinfo[y][n]=false
-			end
-		end
-	end end
-	
-	local canDo=false
-	for a=1,9 do
-		for n=1,9 do
-			if xlineinfo[a][n]~=false then
-				-- print ("IN X LINE "..a.." NUMBER "..n.." WITH "..xlineinfo[a][n].." POSSIBILITIES")
-				canDo=true
-			end
-			if ylineinfo[a][n]~=false then
-				-- print ("IN Y LINE "..a.." NUMBER "..n.." WITH "..ylineinfo[a][n].." POSSIBILITIES")
-				canDo=true
-			end
-		end
-	end
-	
-	if canDo==true then 
-		timer.performWithDelay(10,dustOptions)
-	else
-		flying=true
-		timer.performWithDelay(1,Assign)		
-	end
-end
-
-function dustOptions()
-	local didChange=false
-	for curx=1,9 do for cury=1,9 do
-		if (tile[curx][cury]) then
-			if done[curx][cury]==false then
-			for n=1,9 do
-				if (tile[curx][cury].num[n]) then
-					if xlineinfo[curx][n]~=false then
-						for x=1,9 do for y=1,9 do
-							if thisquad==tile[curx][cury].quad then
-								if x~=curx then
-									didChange=true
-									display.remove (tile[x][y].num[n])
-									tile[x][y].num[n]=nil
-								end
-							end
-						end end
-					end
-					if ylineinfo[cury][n]~=false then
-						for x=1,9 do for y=1,9 do
-							if thisquad==tile[curx][cury].quad then
-								if y~=cury then
-									didChange=true
-									display.remove (tile[x][y].num[n])
-									tile[x][y].num[n]=nil
-								end
-							end
-						end end
-					end
-				end
-			end
-			end
-		end
-	end end
-	if didChange==true then
-		mrClean()
-	end
-	flying=true
-	timer.performWithDelay(100,Assign)
-end
-
-function bruteSelect()
-
-	brutePos={}
-	for x=1,9 do
-		brutePos[x]={}
-		for y=1,9 do
-			brutePos[x][y]=0
-			for n=1,9 do
-				if tile[x][y].num[n] then
-					brutePos[x][y]=brutePos[x][y]+1
-				end
-			end
-		end
-	end
-	local canDo=false
-	for x=1,9 do for y=1,9 do
-		if brutePos[x][y]==2 then
-			brutePos[x][y]=true
-			canDo=true
-		else
-			brutePos[x][y]=false
-		end
-	end end
-	
-	if canDo==true then
-		timer.performWithDelay(10,bruteOptions)
-	else
-		smash=true
-		timer.performWithDelay(1,Assign)		
-	end
-end
-
-function bruteOptions()
-	local didChange=false
-	local xChange
-	local yChange
-	for curx=1,9 do for cury=1,9 do
-		if (tile[curx][cury]) then
-			if done[curx][cury]==false and brutePos[curx][cury]==true then
-			for n=1,9 do
-				if (tile[curx][cury].num[n]) then
-					if didChange==false then
-							print ("("..curx..","..cury..") -- INCEPTION LEVEL "..#bfOrder+1 .." - POSSIBLE "..n.." PLACED")
-							display.remove(tile[curx][cury].num[n])
-							tile[curx][cury].num[n]=nil
-							bfOrder[#bfOrder+1]={curx,cury,n}
-							
-							tile[curx][cury].num[n]=display.newText(n,0,0,native.systemFont,40)
-							tile[curx][cury].num[n].x=tile[curx][cury].x
-							tile[curx][cury].num[n].y=tile[curx][cury].y
-							tile[curx][cury].num[n]:setTextColor(0,1,0)
-							done[curx][cury]=true
-							clean()
-							didChange=true
-							xChange=curx
-							yChange=cury
-					elseif xChange==curx and yChange==cury then
-						display.remove(tile[curx][cury].num[n])
-						tile[curx][cury].num[n]=nil
-						bfOrder[#bfOrder][4]=n
-						-- print ("OTHER POSSIBILITY - "..n)
-					end
-				end
-			end
-			end
-		end
-	end end
-	if didChange==true then
-		mrClean()
-	end
-	smash=true
-	timer.performWithDelay(100,Assign)
-	-- Runtime:addEventListener("tap",Assign)
-end
-
-function reduceBrutes()
-	-- Runtime:removeEventListener("tap",reduceBrutes)
-	if table.maxn(bfOrder)==0 then
-		print "IMPOSSIBLE (?)"
-		textmain.text=""
-		textline1.text="ESTA CAGA"
-		textline2.text="NO SE PUEDE"
-	
-		display.remove(squarei)
-		squarei=nil
-		
-		display.remove(texti)
-		texti=nil
-		
-		Runtime:addEventListener("tap",ShamWow)
-	else
-		-- bfOrder[#bfOrder+1]={curx,cury,n}
-		local tilex=bfOrder[#bfOrder][1]
-		local tiley=bfOrder[#bfOrder][2]
-		local oldnum=bfOrder[#bfOrder][3]
-		local newnum=bfOrder[#bfOrder][4]
-		print ("INCEPTION LEVEL "..#bfOrder.." - NUM1 "..tostring(oldnum)..", NUM2 "..newnum)
-		-- for n=1,9 do
-			-- if (tile[tilex][tiley].num[n]) then
-				-- print (n)
-			-- end
-		-- end
-		if (oldnum==false) then
-			-- print "WENT BACK ONE"
-			-- print (#bfOrder)
-			bfOrder[#bfOrder]=nil
-			-- print (#bfOrder)
-			reduceBrutes()
-		else
-			for x=1,9 do for y=1,9 do
-				if setup[((y-1)*9)+x]==0 then
-					for n=1,9 do
-						display.remove(tile[x][y].num[n])
-						tile[x][y].num[n]=nil
-					end
-					if (tile[x][y].num[10]) then
-						display.remove(tile[x][y].num[10])
-						tile[x][y].num[10]=nil
-					end
-					local notForce=true
-					for bf=1,table.maxn(bfOrder) do
-						if x==bfOrder[bf][1] and y==bfOrder[bf][2] then
-							notForce=false
-						end
-					end
-					if notForce==true then
-						for n=1,9 do
-							tile[x][y].num[n]=display.newText(n,0,0,native.systemFont,10)
-							tile[x][y].num[n].x=tile[x][y].x+(((n-1)%3)*10)-10
-							tile[x][y].num[n].y=tile[x][y].y+(math.floor((n-1)/3)*10)-10
-							tile[x][y].num[n]:setTextColor(0,0,1)
-						end
-					end
-					done[x][y]=false
-				end 
-			end end
-		
-			for bf=1,table.maxn(bfOrder) do
-				local tilex2=bfOrder[bf][1]
-				local tiley2=bfOrder[bf][2]
-				local oldnum2=bfOrder[bf][3]
-				local newnum2=bfOrder[bf][4]
-				if tilex2==tilex and tiley2==tiley then
-					for n=1,9 do
-						display.remove(tile[tilex2][tiley2].num[n])
-						tile[tilex2][tiley2].num[n]=nil
-					end
-					bfOrder[bf][3]=false
-					tile[tilex2][tiley2].num[newnum]=display.newText(newnum,0,0,native.systemFont,40)
-					tile[tilex2][tiley2].num[newnum].x=tile[tilex2][tiley2].x
-					tile[tilex2][tiley2].num[newnum].y=tile[tilex2][tiley2].y
-					tile[tilex2][tiley2].num[newnum]:setTextColor(0,1,0)
-					done[tilex2][tiley2]=true
-				else
-					if oldnum2==false then
-						tile[tilex2][tiley2].num[newnum2]=display.newText(newnum2,0,0,native.systemFont,40)
-						tile[tilex2][tiley2].num[newnum2].x=tile[tilex2][tiley2].x
-						tile[tilex2][tiley2].num[newnum2].y=tile[tilex2][tiley2].y
-						tile[tilex2][tiley2].num[newnum2]:setTextColor(0,1,0)
-						done[tilex2][tiley2]=true
-					else
-						tile[tilex2][tiley2].num[oldnum2]=display.newText(oldnum2,0,0,native.systemFont,40)
-						tile[tilex2][tiley2].num[oldnum2].x=tile[tilex2][tiley2].x
-						tile[tilex2][tiley2].num[oldnum2].y=tile[tilex2][tiley2].y
-						tile[tilex2][tiley2].num[oldnum2]:setTextColor(0,1,0)
-						done[tilex2][tiley2]=true
-					end
-					
-				end
-			end
-		
-		
-			mrClean()
-			print ("("..tilex..","..tiley..") -- REPLACED "..oldnum.." WITH "..newnum)
-			-- Runtime:addEventListener("tap",doneCheck)
-			doneCheck()
-		end
-	end
 end
 
