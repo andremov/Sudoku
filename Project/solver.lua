@@ -5,105 +5,80 @@
 -----------------------------------------------------------------------------------------
 module(..., package.seeall)
 
--- NEW VARS
+local ACTION_PAUSE = 0
+local ACTION_UNPAUSE = 1
+local ACTION_BACK = 2
+
 local board
+local boardGroup
 local isSolving
 local tileSetupMenuGroup
 local boardSetupMenuGroup
+local solvingMenuGroup
 local currentProcess
 local history
--- OLD VARS
+local isPaused
+local currentAction
 local puzzles={
-		{
+	{
 
-			{ 0,0,0, 0,0,0, 0,0,0, },
-			{ 0,0,0, 0,0,0, 0,0,0, },
-			{ 0,0,0, 0,0,0, 0,0,0, },
-			
-			{ 0,0,0, 0,0,0, 0,0,0, },
-			{ 0,0,0, 0,0,0, 0,0,0, },
-			{ 0,0,0, 0,0,0, 0,0,0, },
-			
-			{ 0,0,0, 0,0,0, 0,0,0, },
-			{ 0,0,0, 0,0,0, 0,0,0, },
-			{ 0,0,0, 0,0,0, 0,0,0, },
+		{ 1,0,0, 0,0,7, 0,9,0, },
+		{ 0,3,0, 0,2,0, 0,0,8, },
+		{ 0,0,9, 6,0,0, 5,0,0, },
 		
-		}, {
-
-			{ 1,0,0, 0,0,7, 0,9,0, },
-			{ 0,3,0, 0,2,0, 0,0,8, },
-			{ 0,0,9, 6,0,0, 5,0,0, },
-			
-			{ 0,0,5, 3,0,0, 9,0,0, },
-			{ 0,1,0, 0,8,0, 0,0,2, },
-			{ 6,0,0, 0,0,4, 0,0,0, },
-			
-			{ 3,0,0, 0,0,0, 0,1,0, },
-			{ 0,4,0, 0,0,0, 0,0,7, },
-			{ 0,0,7, 0,0,0, 3,0,0, },
+		{ 0,0,5, 3,0,0, 9,0,0, },
+		{ 0,1,0, 0,8,0, 0,0,2, },
+		{ 6,0,0, 0,0,4, 0,0,0, },
 		
-		}, {
-		
-			{ 8,0,0, 0,0,0, 0,0,0, },
-			{ 0,0,3, 6,0,0, 0,0,0, },
-			{ 0,7,0, 0,9,0, 2,0,0, },
-			
-			{ 0,5,0, 0,0,7, 0,0,0, },
-			{ 0,0,0, 0,4,5, 7,0,0, },
-			{ 0,0,0, 1,0,0, 0,3,0, },
-			
-			{ 0,0,1, 0,0,0, 0,6,8, },
-			{ 0,0,8, 5,0,0, 0,1,0, },
-			{ 0,9,0, 0,0,0, 4,0,0, },
-		
-		}, {
-		
-			{ 1,6,0, 0,9,0, 0,0,0, },
-			{ 0,0,9, 0,0,0, 0,0,2, },
-			{ 0,0,0, 0,0,2, 0,0,0, },
-			
-			{ 9,0,0, 0,8,1, 0,0,0, },
-			{ 0,0,0, 2,0,0, 0,0,7, },
-			{ 0,0,0, 0,6,0, 0,3,0, },
-			
-			{ 0,0,7, 3,0,4, 0,0,6, },
-			{ 0,0,0, 6,0,0, 8,0,0, },
-			{ 4,0,0, 0,0,9, 5,0,0, },
-		
-		},
-	}
+		{ 3,0,0, 0,0,0, 0,1,0, },
+		{ 0,4,0, 0,0,0, 0,0,7, },
+		{ 0,0,7, 0,0,0, 3,0,0, },
 	
--- local tile={}
-local done={}
-local xySpread={}
-local xLines={}
-local yLines={}
-local xDust={}
-local yDust={}
-local areaSpread={}
-local areaTiles={}
-local unqLineSpread=false
-local unqQuadSpread=false
-local flying=false
-local magicSpread={}
-local xPosLines={}
-local yPosLines={}
-local process=1
-local isWrong=false
-local ogre={}
-local bfOrder={}
-local smash=false
-local selected={1,1}
-local nums2choose
-local texts2choose
-local processdisplay={}
-local started
-local interrupt=false
+	}, {
+	
+		{ 8,0,0, 0,0,0, 0,0,0, },
+		{ 0,0,3, 6,0,0, 0,0,0, },
+		{ 0,7,0, 0,9,0, 2,0,0, },
+		
+		{ 0,5,0, 0,0,7, 0,0,0, },
+		{ 0,0,0, 0,4,5, 7,0,0, },
+		{ 0,0,0, 1,0,0, 0,3,0, },
+		
+		{ 0,0,1, 0,0,0, 0,6,8, },
+		{ 0,0,8, 5,0,0, 0,1,0, },
+		{ 0,9,0, 0,0,0, 4,0,0, },
+	
+	}, {
+	
+		{ 1,6,0, 0,9,0, 0,0,0, },
+		{ 0,0,9, 0,0,0, 0,0,2, },
+		{ 0,0,0, 0,0,2, 0,0,0, },
+		
+		{ 9,0,0, 0,8,1, 0,0,0, },
+		{ 0,0,0, 2,0,0, 0,0,7, },
+		{ 0,0,0, 0,6,0, 0,3,0, },
+		
+		{ 0,0,7, 3,0,4, 0,0,6, },
+		{ 0,0,0, 6,0,0, 8,0,0, },
+		{ 4,0,0, 0,0,9, 5,0,0, },
+	
+	},
+}
+
+function deleteEverything()
+	display.remove(boardGroup)
+	boardGroup = nil
+	display.remove(boardSetupMenuGroup)
+	boardSetupMenuGroup = nil
+	local menu = require("menu")
+	menu.start()
+end
+
 
 function init()
 	initBoard()
 	initUI()
-	initPuzzle(3)
+	-- initPuzzle(2)
 end
 
 function initUI()
@@ -115,7 +90,7 @@ function initUI()
 	resetBtn.x=midW
 	resetBtn.y=display.contentHeight-70
 	resetBtn:setFillColor(0.8,0.5,0.5)
-	-- resetBtn:addEventListener("tap",prevStep)
+	resetBtn:addEventListener("tap",resetSudoku)
 	boardSetupMenuGroup:insert(resetBtn)
 	
 	local resetText=display.newText("Reset",0,0,native.systemFont,30)
@@ -138,11 +113,25 @@ function initUI()
 	solveText:setTextColor(0,0,0)
 	boardSetupMenuGroup:insert(solveText)
 
+	local backBtn=display.newRect(0,0,120,100)
+	backBtn.x=-20
+	backBtn.y=display.contentHeight-100
+	backBtn:setFillColor(0.4,0.4,0.4)
+	backBtn:addEventListener("tap",deleteEverything)
+	boardSetupMenuGroup:insert(backBtn)
+	
+	local backText=display.newText("Back",0,0,native.systemFont,15)
+	backText.x=10
+	backText.y=backBtn.y
+	backText:setTextColor(0.7,0.7,0.7)
+	boardSetupMenuGroup:insert(backText)
+
 end
 
 function initBoard()
 
 	board = { }
+	boardGroup = display.newGroup()
 	isSolving = false
 	for y = 1, 9 do
 		board[y] = { }
@@ -285,6 +274,7 @@ function initBoard()
 			square:addEventListener("tap",square)
 
 			board[y][x] = square
+			boardGroup:insert(board[y][x])
 		end
 	end
 
@@ -302,12 +292,12 @@ function openTileSetupMenuGroup(tile)
 	if not (tileSetupMenuGroup and isSolving) then
 		if (tile.finalNum ~= 0) then
 			tile:reset()
+			tile:hideChances()
 		else
+			boardGroup.isVisible = false
+			boardSetupMenuGroup.isVisible = false
+
 			tileSetupMenuGroup=display.newGroup()
-			
-			local bkg=display.newRect(display.contentCenterX,display.contentCenterY,display.contentWidth,display.contentHeight)
-			bkg:setFillColor(0,0,0,0.9)
-			tileSetupMenuGroup:insert(bkg)
 
 			local positionText=display.newText(("Modifying tile "..tile.tileX..","..tile.tileY),0,0,native.systemFont,30)
 			positionText.x=display.contentCenterX
@@ -332,7 +322,7 @@ function openTileSetupMenuGroup(tile)
 			for n = 1,9 do
 				function changeval()
 					tile:setStaticFinal(n)
-					timer.performWithDelay(100,closeTileSetupMenuGroup)
+					timer.performWithDelay(200,closeTileSetupMenuGroup)
 				end
 			
 				numsquares[n]=display.newRect(0,0,75,75)
@@ -357,6 +347,60 @@ end
 function closeTileSetupMenuGroup() 
 	display.remove(tileSetupMenuGroup)
 	tileSetupMenuGroup = nil
+	boardGroup.isVisible = true
+	boardSetupMenuGroup.isVisible = true
+end
+
+function openSolvingMenuGroup()
+	if not (solvingMenuGroup) then
+		solvingMenuGroup=display.newGroup()
+
+		local midW = display.contentCenterX
+		local allY = display.contentHeight
+
+		local bkg=display.newRect(midW,allY-100,midW*1.75, 80)
+		bkg:setFillColor(1,1,1)
+		solvingMenuGroup:insert(bkg)
+		
+		local labelDisplay = display.newText("",0,0,native.systemFont,20)
+		labelDisplay.x = midW
+		labelDisplay.y = allY-115
+		labelDisplay:setFillColor(0,0,0)
+		solvingMenuGroup:insert(labelDisplay)
+
+		local tapAction = display.newText("Tap to pause",0,0,native.systemFont,12)
+		tapAction.x = midW
+		tapAction.y = allY-70
+		tapAction:setFillColor(0.6,0.6,0.6)
+		solvingMenuGroup:insert(tapAction)
+
+		solvingMenuGroup.setLabel = function(self, message)
+			labelDisplay.text = message
+		end
+
+		solvingMenuGroup.changeAction = function(self, action)
+			tapAction.text = "Tap to "..action
+		end
+
+		solvingMenuGroup:toFront()
+	end
+end
+
+function setMessage(text)
+	if (solvingMenuGroup) then
+		solvingMenuGroup:setLabel(text)
+	end
+end
+
+function setAction(action)
+	if (solvingMenuGroup) then
+		solvingMenuGroup:changeAction(action)
+	end
+end
+
+function closeSolvingMenuGroup()
+	display.remove(solvingMenuGroup)
+	solvingMenuGroup = nil
 end
 
 function attemptSolve()
@@ -365,14 +409,24 @@ function attemptSolve()
 		isSolving = true
 		boardSetupMenuGroup.isVisible = false
 		currentProcess = 1
-		displayAllChances()
+		isPaused = false
+		currentAction = ACTION_PAUSE
+		Runtime:addEventListener("tap",tapEvent)
+		openSolvingMenuGroup()
+		showAllChances()
 		advanceProcess()
 	end
 end
 
-function displayAllChances()
+function showAllChances()
 	for y = 1, 9 do for x = 1, 9 do
 		board[y][x]:showChances()
+	end end
+end
+
+function hideAllChances()
+	for y = 1, 9 do for x = 1, 9 do
+		board[y][x]:hideChances()
 	end end
 end
 
@@ -431,17 +485,19 @@ end
 
 function advanceProcess()
 	if (not isValidEnhanced()) then
-		print "Invalid."
 		if (table.maxn(history) == 0) then
-			print "No undos. Resetting..."
-			goDefault()
-			boardSetupMenuGroup.isVisible = true
+			setMessage("Can't be solved.")
+			setAction("go back")
+			currentAction = ACTION_BACK
 		else
-			print "Undoing..."
 			removeBruteForce()
 		end
-	elseif (not isFull()) then
-		local delay = 300
+	elseif (isFull()) then
+		setMessage("Done.")
+		setAction("go back")
+		currentAction = ACTION_BACK
+	elseif not(isPaused) then
+		local delay = 10
 		local calls = {
 			lineReduction, quadReduction, lineUniqueX, 
 			lineUniqueY, quadUnique, quadChanceReductionX, 
@@ -456,8 +512,28 @@ function advanceProcess()
 			"Reducing by Line Y Chances", "Applying Brute Force"
 		}
 		currentProcess = currentProcess + 1
-		print (callNames[currentProcess-1])
+		setMessage(callNames[currentProcess-1])
 		timer.performWithDelay(delay,calls[currentProcess-1])
+	end
+end
+
+function tapEvent()
+	if (currentAction == ACTION_BACK) then
+		goDefault()
+		boardSetupMenuGroup.isVisible = true
+		closeSolvingMenuGroup()
+		hideAllChances()
+		Runtime:removeEventListener("tap",tapEvent)
+	elseif (currentAction == ACTION_PAUSE) then
+		setAction("unpause")
+		setMessage("Solving paused.")
+		currentAction = ACTION_UNPAUSE
+		isPaused = true
+	elseif (currentAction == ACTION_UNPAUSE) then
+		setAction("pause")
+		isPaused = false
+		currentAction = ACTION_PAUSE
+		advanceProcess()
 	end
 end
 
@@ -879,3 +955,7 @@ function goBlank()
 	end end
 end
 
+function resetSudoku()
+	goBlank()
+	hideAllChances()
+end

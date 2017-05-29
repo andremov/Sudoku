@@ -51,11 +51,6 @@ function showFullMenu()
 	group:insert(solveBtn)
 	group:insert(solveText)
 	
-	y = display.contentHeight - 20
-	local fullText = "Developed by Andres Movilla"
-	local rightsText = display.newText(fullText,midW,y,native.systemFont,15)
-	rightsText:setFillColor(0.3,0.3,0.3)
-	
 end
 
 function playCall()
