@@ -520,6 +520,7 @@ end
 function tapEvent()
 	if (currentAction == ACTION_BACK) then
 		goDefault()
+		isSolving = false
 		boardSetupMenuGroup.isVisible = true
 		closeSolvingMenuGroup()
 		hideAllChances()
@@ -913,7 +914,9 @@ function bruteForce()
 		board[y][x]:setGuess(n)
 		advanceProcess()
 	else
-		-- help
+		setMessage("Impossible")
+		setAction("go back")
+		currentAction = ACTION_BACK
 	end
 end
 
