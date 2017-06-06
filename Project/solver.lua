@@ -78,7 +78,7 @@ end
 function init()
 	initBoard()
 	initUI()
-	-- initPuzzle(2)
+	initPuzzle(2)
 end
 
 function initUI()
@@ -128,6 +128,147 @@ function initUI()
 
 end
 
+function sudokuSquare(x, y)
+	local square = display.newRect(0,0,30,30)
+	square.x=-2+	(x*31)+		((x-((x-1)%3))*2)
+	square.y=		(y*31)+		((y-((y-1)%3))*2)
+	square.tileX = x
+	square.tileY = y
+	square.quad = (math.ceil(x/3)) + ((math.floor((y-1)/3))*3)
+	square.finalNum = 0
+	square.finalDisplay = display.newText("",0,0,nativeSystemFont,40)
+	square.finalDisplay.x=square.x
+	square.finalDisplay.y=square.y
+	square.isStaticFinal = false
+	square.isGuess = false
+	square.finalDisplay:setTextColor(0,0,0)
+
+	square.chances = { }
+	square.chancesDisplay = { }
+	for n = 1, 9 do
+		square.chances[n] = true
+		square.chancesDisplay[n]=display.newText("",0,0,native.systemFont,11)
+		square.chancesDisplay[n].x=square.x - 10 + (((n-1)%3)*10)
+		square.chancesDisplay[n].y=square.y - 10 + (math.floor((n-1)/3)*10)
+		square.chancesDisplay[n]:setTextColor(0,0,0)
+	end
+
+	square.isSolved = function(self)
+		return (self.finalNum ~= 0)
+	end
+
+	square.hideChances = function(self)
+		for n = 1, 9 do
+			self.chancesDisplay[n].text = ""
+		end
+	end
+
+	square.showChances = function(self)
+		if (self.finalNum == 0) then
+			for n = 1, 9 do
+				if (self.chances[n]) then
+					self.chancesDisplay[n].text = n
+				end
+			end
+		end
+	end
+
+	square.setStaticFinal = function(self, num)
+		self.finalNum = num
+		self.finalDisplay.text = num
+		square.isStaticFinal = true
+		square.isGuess = false
+		for n = 1, 9 do
+			if (n ~= num) then
+				self.chances[n] = false
+			end
+			self.chancesDisplay[n].text = ""
+		end
+	end
+
+	square.getNumChances = function(self)
+		local count = 0
+		for n = 1, 9 do
+			if (self.chances[n]) then
+				count = count + 1
+			end
+		end
+		return count
+	end
+
+	square.setGuess = function(self, num)
+		self.finalNum = num
+		self.finalDisplay.text = num
+		self.finalDisplay:setFillColor(0,0.7,0)
+		square.isStaticFinal = false
+		square.isGuess = true
+		resetProcess()
+		for n = 1, 9 do
+			if (n ~= num) then
+				self.chances[n] = false
+			else
+				self.chances[n] = true
+			end
+			self.chancesDisplay[n].text = ""
+		end
+	end
+
+	square.setFinal = function(self, num)
+		self.finalNum = num
+		self.finalDisplay.text = num
+		self.finalDisplay:setFillColor(0,0,0.7)
+		square.isStaticFinal = false
+		square.isGuess = false
+		resetProcess()
+		for n = 1, 9 do
+			if (n ~= num) then
+				self.chances[n] = false
+			end
+			self.chancesDisplay[n].text = ""
+		end
+	end
+
+	square.removeChance = function(self, index)
+		if (self.chances[index]) then
+			resetProcess()
+		end
+		self.chances[index] = false
+		self.chancesDisplay[index].text = ""
+		self:checkUnique()
+	end
+
+	square.reset = function(self)
+		self.finalNum = 0
+		self.finalDisplay.text = ""
+		self.finalDisplay:setFillColor(0,0,0)
+		square.isStaticFinal = false
+		square.isGuess = false
+		for n = 1, 9 do
+			self.chances[n] = true
+			self.chancesDisplay[n].text = n
+		end
+	end
+
+	square.checkUnique = function(self)
+		if (self:getNumChances() == 1 and self.finalNum == 0) then
+			for n = 1, 9 do
+				if (self.chances[n]) then
+					self:setFinal(n)
+				end
+			end
+		end
+	end
+
+	square.tap = function(self)
+		if not (isSolving) then
+			openTileSetupMenuGroup(self)
+		end
+	end
+	square:addEventListener("tap",square)
+
+	return square
+end
+
 function initBoard()
 
 	board = { }
@@ -136,144 +277,7 @@ function initBoard()
 	for y = 1, 9 do
 		board[y] = { }
 		for x = 1, 9 do
-			local square = display.newRect(0,0,30,30)
-			square.x=-2+	(x*31)+		((x-((x-1)%3))*2)
-			square.y=		(y*31)+		((y-((y-1)%3))*2)
-			square.tileX = x
-			square.tileY = y
-			square.quad = (math.ceil(x/3)) + ((math.floor((y-1)/3))*3)
-			square.finalNum = 0
-			square.finalDisplay = display.newText("",0,0,nativeSystemFont,40)
-			square.finalDisplay.x=square.x
-			square.finalDisplay.y=square.y
-			square.isStaticFinal = false
-			square.isGuess = false
-			square.finalDisplay:setTextColor(0,0,0)
-
-			square.chances = { }
-			square.chancesDisplay = { }
-			for n = 1, 9 do
-				square.chances[n] = true
-				square.chancesDisplay[n]=display.newText("",0,0,native.systemFont,11)
-				square.chancesDisplay[n].x=square.x - 10 + (((n-1)%3)*10)
-				square.chancesDisplay[n].y=square.y - 10 + (math.floor((n-1)/3)*10)
-				square.chancesDisplay[n]:setTextColor(0,0,0)
-			end
-
-			square.isSolved = function(self)
-				return (self.finalNum ~= 0)
-			end
-
-			square.hideChances = function(self)
-				for n = 1, 9 do
-					self.chancesDisplay[n].text = ""
-				end
-			end
-
-			square.showChances = function(self)
-				if (self.finalNum == 0) then
-					for n = 1, 9 do
-						if (self.chances[n]) then
-							self.chancesDisplay[n].text = n
-						end
-					end
-				end
-			end
-
-			square.setStaticFinal = function(self, num)
-				self.finalNum = num
-				self.finalDisplay.text = num
-				square.isStaticFinal = true
-				square.isGuess = false
-				for n = 1, 9 do
-					if (n ~= num) then
-						self.chances[n] = false
-					end
-					self.chancesDisplay[n].text = ""
-				end
-			end
-
-			square.getNumChances = function(self)
-				local count = 0
-				for n = 1, 9 do
-					if (self.chances[n]) then
-						count = count + 1
-					end
-				end
-				return count
-			end
-
-			square.setGuess = function(self, num)
-				self.finalNum = num
-				self.finalDisplay.text = num
-				self.finalDisplay:setFillColor(0,0.7,0)
-				square.isStaticFinal = false
-				square.isGuess = true
-				resetProcess()
-				for n = 1, 9 do
-					if (n ~= num) then
-						self.chances[n] = false
-					else
-						self.chances[n] = true
-					end
-					self.chancesDisplay[n].text = ""
-				end
-			end
-
-			square.setFinal = function(self, num)
-				self.finalNum = num
-				self.finalDisplay.text = num
-				self.finalDisplay:setFillColor(0,0,0.7)
-				square.isStaticFinal = false
-				square.isGuess = false
-				resetProcess()
-				for n = 1, 9 do
-					if (n ~= num) then
-						self.chances[n] = false
-					end
-					self.chancesDisplay[n].text = ""
-				end
-			end
-
-			square.removeChance = function(self, index)
-				if (self.chances[index]) then
-					resetProcess()
-				end
-				self.chances[index] = false
-				self.chancesDisplay[index].text = ""
-				self:checkUnique()
-			end
-
-			square.reset = function(self)
-				self.finalNum = 0
-				self.finalDisplay.text = ""
-				self.finalDisplay:setFillColor(0,0,0)
-				square.isStaticFinal = false
-				square.isGuess = false
-				for n = 1, 9 do
-					self.chances[n] = true
-					self.chancesDisplay[n].text = n
-				end
-			end
-
-			square.checkUnique = function(self)
-				if (self:getNumChances() == 1 and self.finalNum == 0) then
-					for n = 1, 9 do
-						if (self.chances[n]) then
-							self:setFinal(n)
-						end
-					end
-				end
-			end
-
-			square.tap = function(self)
-				if not (isSolving) then
-					openTileSetupMenuGroup(self)
-				end
-			end
-			square:addEventListener("tap",square)
-
-			board[y][x] = square
+			board[y][x] = sudokuSquare(x, y)
 			boardGroup:insert(board[y][x])
 		end
 	end
@@ -921,18 +925,22 @@ function bruteForce()
 end
 
 function removeBruteForce()
-	local y = history[table.maxn(history)].y
-	local x = history[table.maxn(history)].x
-	local n = history[table.maxn(history)].chances[1]
-	local m = history[table.maxn(history)].chances[2]
-	if (board[y][x].finalNum == n) then
-		board[y][x]:setGuess(m)
-		goGuesses()
+	if (table.maxn(history) == 0) then
 		advanceProcess()
-	elseif (board[y][x].finalNum == m) then
-		board[y][x]:reset()
-		history[table.maxn(history)] = nil
-		removeBruteForce()
+	else
+		local y = history[table.maxn(history)].y
+		local x = history[table.maxn(history)].x
+		local n = history[table.maxn(history)].chances[1]
+		local m = history[table.maxn(history)].chances[2]
+		if (board[y][x].finalNum == n) then
+			board[y][x]:setGuess(m)
+			goGuesses()
+			advanceProcess()
+		elseif (board[y][x].finalNum == m) then
+			board[y][x]:reset()
+			history[table.maxn(history)] = nil
+			removeBruteForce()
+		end
 	end
 end
 
