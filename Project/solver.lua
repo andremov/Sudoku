@@ -78,7 +78,7 @@ end
 function init()
 	initBoard()
 	initUI()
-	initPuzzle(2)
+	-- initPuzzle(2)
 end
 
 function initUI()
@@ -521,7 +521,7 @@ function advanceProcess()
 	end
 end
 
-function tapEvent()
+function tapEvent( event )
 	if (currentAction == ACTION_BACK) then
 		goDefault()
 		isSolving = false
@@ -530,15 +530,21 @@ function tapEvent()
 		hideAllChances()
 		Runtime:removeEventListener("tap",tapEvent)
 	elseif (currentAction == ACTION_PAUSE) then
-		setAction("unpause")
+		setAction("unpause, tap board to go back")
 		setMessage("Solving paused.")
 		currentAction = ACTION_UNPAUSE
 		isPaused = true
 	elseif (currentAction == ACTION_UNPAUSE) then
-		setAction("pause")
-		isPaused = false
-		currentAction = ACTION_PAUSE
-		advanceProcess()
+		if (event.y > 310) then
+			setAction("pause")
+			isPaused = false
+			currentAction = ACTION_PAUSE
+			advanceProcess()
+		else
+			currentAction = ACTION_BACK
+			isPaused = false
+			tapEvent()
+		end
 	end
 end
 

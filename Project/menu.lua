@@ -55,7 +55,8 @@ end
 
 function playCall()
 	dispose()
-	
+	local play = require("game")
+	play.init()
 end
 
 function solveCall()
